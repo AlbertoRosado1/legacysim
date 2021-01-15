@@ -9,10 +9,10 @@ import fitsio
 import legacypipe
 from legacypipe import runbrick as lprunbrick
 
-from obiwan import setup_logging,runbrick,SimCatalog,RunCatalog,find_file
-from obiwan.catalog import ListStages,Stages
-from obiwan.batch import TaskManager,EnvironmentManager,environment_manager,run_shell,get_pythonpath
-from obiwan.scripts import runlist
+from legacysim import setup_logging,runbrick,SimCatalog,RunCatalog,find_file
+from legacysim.catalog import ListStages,Stages
+from legacysim.batch import TaskManager,EnvironmentManager,environment_manager,run_shell,get_pythonpath
+from legacysim.scripts import runlist
 
 
 setup_logging()
@@ -31,7 +31,7 @@ def test_task_manager():
 
 
 def test_environment_manager_runlist():
-    # here we run legacypipe and obiwan for different configurations, using environment_manager and runlist scripts
+    # here we run legacypipe and legacysim for different configurations, using environment_manager and runlist scripts
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
     # first create environment variables
     names_environ,shorts_environ = [],[]
@@ -99,7 +99,7 @@ def test_environment_manager_runlist():
         pickle_fn[run] = os.path.join(pickle_dir[run],'runbrick-%(brick)s-%%(stage)s.pickle')
         for stage,versions in config['stages']:
             for module,version in versions:
-                if module in ['legacypipe','obiwan']:
+                if module in ['legacypipe','legacysim']:
                     path = os.path.join(module_dir,'%s_%s' % (module,version),'py')
                     assert os.path.isdir(path)
                     pythonpath_modules[(module,version)] = path
@@ -174,13 +174,13 @@ def test_environment_manager_runlist():
 
         output_dirs = []
         for i in range(1,5):
-            output_dir = 'out-testcase3-obiwan-%d' % i
+            output_dir = 'out-testcase3-legacysim-%d' % i
             shutil.rmtree(output_dir,ignore_errors=True)
             output_dirs.append(output_dir)
 
         for stage,version in config['stages']:
 
-            # with pickle; if irun != 0, try obiwan default option which consists in saving pickle in obiwan file structure
+            # with pickle; if irun != 0, try legacysim default option which consists in saving pickle in legacysim file structure
             args = runbrick_args.copy()
             if irun == 0: args += ['--pickle',pickle_fn[run]]
             if stage == 'writecat':
@@ -197,8 +197,8 @@ def test_environment_manager_runlist():
 
             assert os.environ == environ
 
-            # environment from obiwan tractor header
-            with EnvironmentManager(base_dir=output_dirs[0],brickname=brickname,source='obiwan') as em:
+            # environment from legacysim tractor header
+            with EnvironmentManager(base_dir=output_dirs[0],brickname=brickname,source='legacysim') as em:
                 tmppythonpath = get_pythonpath(module_dir,[(module,em.get_module_version(module,stage=stage)) for module in modules],full=True)
                 add_syspath(tmppythonpath)
                 importlib.reload(legacypipe)
@@ -245,7 +245,7 @@ def test_environment_manager_runlist():
         runcat = runlist.main(['--outdir',legacypipe_dir[run],'--modules'] + modules)
         assert not os.path.exists(list_fn)
         list_fn = os.path.join(output_dirs[3],'runlist.txt')
-        run_shell(['python',runlist.__file__] + ['--outdir',output_dirs[0],'--source','obiwan','--write-list',list_fn,'--modules'] + modules)
+        run_shell(['python',runlist.__file__] + ['--outdir',output_dirs[0],'--source','legacysim','--write-list',list_fn,'--modules'] + modules)
         runcat2 = RunCatalog.from_list(list_fn)
         assert runcat2 == runcat
         os.remove(list_fn)
@@ -264,11 +264,11 @@ def test_environment_manager_runlist():
         # check same headers
         for iout,output_dir in enumerate(output_dirs):
 
-            obiwan_fn = find_file(base_dir=output_dir,filetype='tractor',source='obiwan',brickname=brickname)
-            header_obiwan = fitsio.read_header(obiwan_fn)
-            env_obiwan = get_env(header_obiwan,keys_environ)
-            assert env_legacypipe == env_obiwan
-            tractor_obiwan = SimCatalog(obiwan_fn)
-            if iout <= 2: assert tractor_obiwan == tractor_legacypipe
+            legacysim_fn = find_file(base_dir=output_dir,filetype='tractor',source='legacysim',brickname=brickname)
+            header_legacysim = fitsio.read_header(legacysim_fn)
+            env_legacysim = get_env(header_legacysim,keys_environ)
+            assert env_legacypipe == env_legacysim
+            tractor_legacysim = SimCatalog(legacysim_fn)
+            if iout <= 2: assert tractor_legacysim == tractor_legacypipe
 
         #print(header_legacypipe)

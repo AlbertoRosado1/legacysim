@@ -6,12 +6,12 @@ import sys
 from setuptools import setup, find_packages
 setup_keywords = dict()
 
-setup_keywords['name'] = 'obiwan'
+setup_keywords['name'] = 'legacysim'
 setup_keywords['description'] = 'Monte Carlo simulation of the legacypipe'
 setup_keywords['author'] = 'DESI Collaboration'
 setup_keywords['author_email'] = ''
 setup_keywords['license'] = 'GPLv2'
-setup_keywords['url'] = 'https://github.com/adematti/obiwan'
+setup_keywords['url'] = 'https://github.com/adematti/legacysim'
 
 #
 # Setup.py, you suck
@@ -28,7 +28,7 @@ try:
     product = import_module(setup_keywords['name'])
     setup_keywords['long_description'] = product.__doc__
 
-    from obiwan.kenobi import get_git_version
+    from legacysim.survey import get_git_version
     version = get_git_version(os.path.dirname(__file__)).replace('-','.')
 
     setup_keywords['version'] = version
@@ -41,7 +41,7 @@ except ImportError:
             setup_keywords['long_description'] = readme.read()
     else:
         setup_keywords['long_description'] = ''
-    sys.path.insert(int(sys.path[0] == ''),'./py/obiwan')
+    sys.path.insert(int(sys.path[0] == ''),'./py/legacysim')
     from version import __version__
     setup_keywords['version'] = __version__
 

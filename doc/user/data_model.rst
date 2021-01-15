@@ -11,7 +11,7 @@ In a nutshell, outputs are written in the following structure::
   |       `-- 1351p192
   |           `-- file0_rs0_skip0
   |               `-- log.1351p192
-  |-- obiwan
+  |-- injected
   |   `-- 135
   |       `-- 1351p192
   |           `-- file0_rs0_skip0
@@ -62,7 +62,7 @@ The top level output directory includes the following files:
 
 * The usual six directories: **tractor**, **tractor-i**, **coadd**, **metrics**, **checkpoint**, **logs**
 
-* Monte Carlo simulation metadata directory: **obiwan**
+* Monte Carlo simulation metadata directory: **injected**
 
 Subdirectories follow the usual Data Relase format of **.../bri/brick/**, where **bri** is the first three letters of each brick.
 The multiple iterations per brick are identified by directories named **file[0-9]+_rs[0-9]+_skip[0-9]+**.
@@ -78,6 +78,6 @@ The multiple iterations per brick are identified by directories named **file[0-9
 
 * **skip$id** correspond to injected sources that were **skipped** in a previous $id-1 run (if $id>0), because in collision with another injected source.
 
-The catalog of sources injected into images are stored in e.g. **../obiwan/135/1351p192/randoms-1351p192.fits**.
+The catalog of sources injected into images are stored in e.g. **../injected/135/1351p192/randoms-1351p192.fits**.
 The column `collided` identifies collided sources, which were therefore not injected into images.
-Command line arguments to :mod:`~obiwan.runbrick` are saved in the header.
+Command line arguments to :mod:`~legacysim.runbrick` are saved in the header.

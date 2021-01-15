@@ -4,7 +4,7 @@ import logging
 import subprocess
 
 
-logger = logging.getLogger('obiwan.task_manager')
+logger = logging.getLogger('legacysim.task_manager')
 
 
 class BaseTaskManager(object):

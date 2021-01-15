@@ -12,7 +12,7 @@ import logging
 
 from astrometry.util.file import unpickle_from_file
 
-from obiwan import SimCatalog,RunCatalog,find_file,get_randoms_id,utils,setup_logging
+from legacysim import SimCatalog,RunCatalog,find_file,get_randoms_id,utils,setup_logging
 
 
 logger = logging.getLogger('check')
@@ -55,7 +55,7 @@ def main(args=None):
 
     mask = runinput.isin(runoutput,ignore_stage_version=True)
     # remove runs with empty input randoms file.
-    if opt.source == 'obiwan':
+    if opt.source == 'legacysim':
         for irun,run in enumerate(runinput):
             if not mask[irun]:
                 fn = find_file(opt.output_dir,'randoms',brickname=run.brickname,source=opt.source,**run.kwargs_file)

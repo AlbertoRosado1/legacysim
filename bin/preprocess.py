@@ -1,7 +1,7 @@
 import argparse
 import logging
 import numpy as np
-from obiwan import SimCatalog,BrickCatalog,utils,setup_logging
+from legacysim import SimCatalog,BrickCatalog,utils,setup_logging
 import settings
 
 logger = logging.getLogger('preprocessing')
@@ -75,7 +75,7 @@ def sample_from_truth(randoms, truth, rng=None, seed=None):
     phi = rng.uniform(0,np.pi,size=randoms.size)
     randoms.shape_e1,randoms.shape_e2 = utils.get_shape_e1_e2(ba,phi)
 
-    randoms.fill_obiwan()
+    randoms.fill_legacysim()
 
     return randoms
 

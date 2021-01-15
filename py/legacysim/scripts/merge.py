@@ -11,8 +11,8 @@ import os
 import argparse
 import logging
 
-from obiwan import RunCatalog,utils,setup_logging
-from obiwan.analysis import CatalogMerging
+from legacysim import RunCatalog,utils,setup_logging
+from legacysim.analysis import CatalogMerging
 
 
 logger = logging.getLogger('merge')

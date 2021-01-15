@@ -1,5 +1,5 @@
 """
-Script to set up environment for **Obiwan** runs.
+Script to set up environment for **legacysim** runs.
 
 For details, run::
 
@@ -14,19 +14,19 @@ import logging
 import argparse
 import fitsio
 
-from obiwan import find_file,RunCatalog,utils
-from obiwan.catalog import Versions,Stages
+from legacysim import find_file,RunCatalog,utils
+from legacysim.catalog import Versions,Stages
 
 
-logger = logging.getLogger('obiwan.environment_manager')
+logger = logging.getLogger('legacysim.environment_manager')
 
 
 class EnvironmentManager(object):
     """
-    Set up environment variables for **Obiwan** runs. To be called as::
+    Set up environment variables for **legacysim** runs. To be called as::
 
         with EnvironmentManager(...):
-            # do Obiwan-related stuff
+            # do legacysim-related stuff
 
     Attributes
     ----------
@@ -62,20 +62,20 @@ class EnvironmentManager(object):
             If not ``None``, supersedes ``base_dir``, ``brickname``, ``source``, ``filetype``, ``kwargs_file``.
 
         base_dir : string, default=None
-            **Obiwan** (if ``source == 'obiwan'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
+            **legacysim** (if ``source == 'legacysim'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
 
         brickname : string, default=None
             Brick name.
 
-        source : string, default='obiwan'
-            If 'obiwan', search for an **Obiwan** file name, else a **legacypipe** file name.
+        source : string, default='legacysim'
+            If 'legacysim', search for an **legacysim** file name, else a **legacypipe** file name.
 
         filetype : string, default=None
             File type to read primary header from.
-            If ``None``, defaults to 'randoms' if ``source == 'obiwan'``, else 'tractor'.
+            If ``None``, defaults to 'randoms' if ``source == 'legacysim'``, else 'tractor'.
 
         kwargs_file : dict, default=None
-            Other arguments to file paths (e.g. :func:`obiwan.kenobi.get_randoms_id.keys`).
+            Other arguments to file paths (e.g. :func:`legacysim.survey.get_randoms_id.keys`).
 
         skip : bool, default=False
             If ``True``, do not set environment.
@@ -92,7 +92,7 @@ class EnvironmentManager(object):
             self.fn = fn
             if self.fn is None:
                 if filetype is None:
-                    if source == 'obiwan':
+                    if source == 'legacysim':
                         filetype = 'randoms'
                     else:
                         filetype = 'tractor'
@@ -163,8 +163,8 @@ class EnvironmentManager(object):
         key = None
         if module == 'legacypipe':
             key = 'VER_%s' % self.shorts_stage[stage]
-        elif module == 'obiwan':
-            key = 'OBV_%s' % self.shorts_stage[stage]
+        elif module == 'legacysim':
+            key = 'LSV_%s' % self.shorts_stage[stage]
         else:
             for k in self.header:
                 if k.startswith('DEPNAM') and self.header[k] == module:
@@ -212,7 +212,7 @@ def get_pythonpath(module_dir='/src/',versions=(),full=False,as_string=False):
     """
     Return PYTHONPATH.
 
-    The path to 'module' is set to ``module_dir``/module_version(/py for **legacypipe** and **Obiwan** modules).
+    The path to 'module' is set to ``module_dir``/module_version(/py for **legacypipe** and **legacysim** modules).
 
     Parameters
     ----------
@@ -235,7 +235,7 @@ def get_pythonpath(module_dir='/src/',versions=(),full=False,as_string=False):
     pythonpath : string, list of strings
         PYTHONPATH.
     """
-    suffixes_module = {'legacypipe':'py','obiwan':'py'}
+    suffixes_module = {'legacypipe':'py','legacysim':'py'}
     pythonpath = []
     versions = dict(versions)
     for module in versions:
@@ -253,7 +253,7 @@ def get_pythonpath(module_dir='/src/',versions=(),full=False,as_string=False):
 
 def main(args=None):
     """Print all module paths and environment variables used for the run(s)."""
-    #from obiwan import setup_logging
+    #from legacysim import setup_logging
     #setup_logging()
     logging.disable(sys.maxsize)
     parser = argparse.ArgumentParser(description='EnvironmentManager',formatter_class=argparse.ArgumentDefaultsHelpFormatter)

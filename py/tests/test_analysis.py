@@ -5,9 +5,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from legacypipe import runbrick as lprunbrick
 
-from obiwan import setup_logging,runbrick,SimCatalog,RunCatalog,get_randoms_id,find_file,utils
-from obiwan.analysis import ImageAnalysis
-from obiwan.scripts import check,merge,match,resources,cutout
+from legacysim import setup_logging,runbrick,SimCatalog,RunCatalog,get_randoms_id,find_file,utils
+from legacysim.analysis import ImageAnalysis
+from legacysim.scripts import check,merge,match,resources,cutout
 from test_runbrick import generate_randoms
 
 
@@ -15,7 +15,7 @@ setup_logging()
 
 
 survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-output_dir = 'out-testcase3-obiwan'
+output_dir = 'out-testcase3-legacysim'
 legacypipe_dir = 'out-testcase3-legacypipe'
 randoms_fn = os.path.join(output_dir,'input_randoms.fits')
 brickname = '2447p120'
@@ -87,12 +87,12 @@ def test_merge():
 
     base_kwargs = {'outdir':output_dir,'cat-dir':os.path.join(output_dir,'merged'),'fileid':0,'skipid':0,'rowstart':0}
     for extra_kwargs in [{'outdir':legacypipe_dir,'source':'legacypipe','filetype':'tractor'},
-                        {'source':'obiwan','filetype':'tractor'},
+                        {'source':'legacysim','filetype':'tractor'},
                         {'filetype':'randoms','cat-fn':os.path.join(base_kwargs['cat-dir'],'merged_randoms.fits')},
                         ]:
         all_kwargs = {**base_kwargs,**extra_kwargs}
         merge.main(all_kwargs)
-        source = all_kwargs.get('source','obiwan')
+        source = all_kwargs.get('source','legacysim')
         filetype = all_kwargs['filetype']
         if 'cat-fn' in all_kwargs:
             cat_fn = all_kwargs['cat-fn']
@@ -112,8 +112,8 @@ def test_merge():
 
 def test_match():
 
-    randoms = SimCatalog(find_file(base_dir=output_dir,source='obiwan',filetype='randoms',brickname=brickname))
-    output = SimCatalog(find_file(base_dir=output_dir,source='obiwan',filetype='tractor',brickname=brickname))
+    randoms = SimCatalog(find_file(base_dir=output_dir,source='legacysim',filetype='randoms',brickname=brickname))
+    output = SimCatalog(find_file(base_dir=output_dir,source='legacysim',filetype='tractor',brickname=brickname))
     base_kwargs = {'outdir':output_dir,'cat-dir':os.path.join(output_dir,'merged'),'fileid':0,'skipid':0,'rowstart':0}
     for extra_kwargs in [{},
                         {'tractor':os.path.join(output_dir,'merged','merged_tractor.fits')},
@@ -236,7 +236,7 @@ def test_cutout():
         cutout.main(all_kwargs)
         fn = all_kwargs.get('plot-fn',None)
         if fn is None:
-            image_fn = find_file(base_dir=output_dir,source='obiwan',filetype='image-jpeg',brickname=brickname)
+            image_fn = find_file(base_dir=output_dir,source='legacysim',filetype='image-jpeg',brickname=brickname)
             fn = os.path.join(os.path.dirname(image_fn),'cutout-%(brickname)s-%(icut)d.png')
         ncuts = all_kwargs.get('ncuts',np.inf)
         paths = glob.glob(fn.replace('%(icut)d.png','*.png')  % {'brickname':brickname})

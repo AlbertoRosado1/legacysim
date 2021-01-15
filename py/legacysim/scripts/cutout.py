@@ -13,8 +13,8 @@ import logging
 
 from matplotlib import pyplot as plt
 
-from obiwan import RunCatalog,find_file,utils,setup_logging
-from obiwan.analysis import ImageAnalysis
+from legacysim import RunCatalog,find_file,utils,setup_logging
+from legacysim.analysis import ImageAnalysis
 
 
 logger = logging.getLogger('cutout')
@@ -52,7 +52,7 @@ def main(args=None):
                 image.plot_sources(ax)
             plot_fn_kwargs = {'brickname':run.brickname,'icut':islice+1}
             if opt.plot_fn is None:
-                image_fn = find_file(base_dir=opt.output_dir,filetype='image-jpeg',brickname=run.brickname,source='obiwan',**run.kwargs_file)
+                image_fn = find_file(base_dir=opt.output_dir,filetype='image-jpeg',brickname=run.brickname,source='legacysim',**run.kwargs_file)
                 plot_fn = os.path.join(os.path.dirname(image_fn),plot_base_template % plot_fn_kwargs)
                 if plot_fn == image_fn:
                     raise ValueError('Cutout filename is the same as image: %s' % image_fn)

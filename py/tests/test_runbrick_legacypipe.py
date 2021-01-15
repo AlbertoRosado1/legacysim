@@ -13,14 +13,14 @@ if __name__ == '__main__':
     matplotlib.use('Agg')
 from astrometry.util.fits import fits_table
 
-from obiwan import setup_logging
-from obiwan.runbrick import main
+from legacysim import setup_logging
+from legacysim.runbrick import main
 
 
 def rbmain():
     from legacypipe.catalog import read_fits_catalog
     #from legacypipe.survey import LegacySurveySim, wcs_for_brick
-    from obiwan.kenobi import LegacySurveySim
+    from legacysim.survey import LegacySurveySim
     from legacypipe.survey import wcs_for_brick
     from tractor.galaxy import DevGalaxy
     from tractor import PointSource, Catalog

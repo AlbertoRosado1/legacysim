@@ -3,7 +3,7 @@
 Contributing
 ============
 
-Contributions to **Obiwan** are more than welcome!
+Contributions to **legacysim** are more than welcome!
 Please follow these guidelines before filing a pull request:
 
 * Please abide by `PEP8`_ as much as possible in your code writing, add docstrings and tests in :root:`py/tests` for each new functionality.

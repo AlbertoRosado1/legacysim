@@ -13,7 +13,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../py/'))
-sys.path.insert(0, os.path.abspath('../py/obiwan'))
+sys.path.insert(0, os.path.abspath('../py/legacysim'))
 from version import __version__,__docker_image__
 
 # -- General configuration ------------------------------------------------
@@ -34,7 +34,7 @@ extensions = [
 
 # -- Project information -----------------------------------------------------
 
-project = 'Obiwan'
+project = 'legacysim'
 copyright = '2020, Hui Kong, Kaylan Burleigh, John Moustakas, Arnaud de Mattia'
 author = 'Hui Kong, Kaylan Burleigh, John Moustakas, Arnaud de Mattia'
 
@@ -63,13 +63,13 @@ exclude_patterns = ['build', '**.ipynb_checkpoints']
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['static']
 
-git_repo = 'https://github.com/adematti/obiwan.git'
-git_root = 'https://github.com/adematti/obiwan/blob/master/'
-docker_root = 'https://hub.docker.com/r/adematti/obiwan/'
+git_repo = 'https://github.com/adematti/legacysim.git'
+git_root = 'https://github.com/adematti/legacysim/blob/master/'
+docker_root = 'https://hub.docker.com/r/adematti/legacysim/'
 legacysurvey_root = '/global/cfs/cdirs/cosmo/work/legacysurvey/dr9m/'
 
 extlinks = {'root': (git_root + '%s',''),
-            'pyobiwan': (git_root + 'py/obiwan/%s',''),
+            'pylegacysim': (git_root + 'py/legacysim/%s',''),
             'dockerroot': (docker_root + '%s',''),
             'legacypipe': ('https://github.com/legacysurvey/legacypipe/blob/master/','legacypipe')}
 

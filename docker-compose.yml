@@ -1,7 +1,7 @@
 version: '3'
 services:
-  obiwan:
-    image: obiwan
+  legacysim:
+    image: legacysim
     build:
       context: .
       dockerfile: ./docker/Dockerfile

@@ -5,8 +5,8 @@ import argparse
 
 import numpy as np
 
-from obiwan import setup_logging
-from obiwan.utils import (saveplot,MonkeyPatching,get_parser_args,list_parser_dest,get_parser_action_by_dest,
+from legacysim import setup_logging
+from legacysim.utils import (saveplot,MonkeyPatching,get_parser_args,list_parser_dest,get_parser_action_by_dest,
                             match_id,sample_ra_dec,match_radec,mask_collisions,get_radecbox_area,
                             get_shape_e1_e2,get_shape_ba_phi,mag2nano,nano2mag,get_extinction)
 
@@ -25,32 +25,32 @@ def test_plots():
 
 
 def test_monkey_patching():
-    import obiwan
+    import legacysim
     def test():
         return True
     def test2():
         return 'file'
     with MonkeyPatching() as mp:
-        mp.add(obiwan,'test',test)
-        mp.add(obiwan,'find_file',test2)
+        mp.add(legacysim,'test',test)
+        mp.add(legacysim,'find_file',test2)
         mp.add(np,'sillyname',test2)
-        assert obiwan.test()
-        assert obiwan.find_file() == 'file'
+        assert legacysim.test()
+        assert legacysim.find_file() == 'file'
         assert np.sillyname()
         assert hasattr(np,'sillyname')
-        assert (obiwan,'find_file') in mp
-        assert list(mp.keys()) == [(obiwan,'test'),(obiwan,'find_file'),(np,'sillyname')]
-        mp.remove(obiwan,'test')
-        assert list(mp.keys()) == [(obiwan,'find_file'),(np,'sillyname')]
-        assert not hasattr(obiwan,'test')
+        assert (legacysim,'find_file') in mp
+        assert list(mp.keys()) == [(legacysim,'test'),(legacysim,'find_file'),(np,'sillyname')]
+        mp.remove(legacysim,'test')
+        assert list(mp.keys()) == [(legacysim,'find_file'),(np,'sillyname')]
+        assert not hasattr(legacysim,'test')
         mp.clear()
         assert list(mp.keys()) == []
-        assert hasattr(obiwan,'find_file')
+        assert hasattr(legacysim,'find_file')
         assert not hasattr(np,'sillyname')
-        mp.add(obiwan,'find_file',test)
-        mp.add(obiwan,'find_file2',test2)
-        assert obiwan.find_file()
-    assert not hasattr(obiwan,'find_file2')
+        mp.add(legacysim,'find_file',test)
+        mp.add(legacysim,'find_file2',test2)
+        assert legacysim.find_file()
+    assert not hasattr(legacysim,'find_file2')
 
 
 def test_misc():
@@ -61,7 +61,7 @@ def test_misc():
     parser = argparse.ArgumentParser(add_help=False,parents=[parent])
     parser.add_argument('-r', '--run', default=None,
     					help='Set the run type to execute')
-    group = parser.add_argument_group('Obiwan', 'Obiwan-specific arguments')
+    group = parser.add_argument_group('legacysim', 'legacysim-specific arguments')
     group.add_argument(
     	'-f', '--force-stage', dest='force', action='append', default=[],
     	help="Force re-running the given stage(s) -- don't read from pickle.")
@@ -76,7 +76,7 @@ def test_misc():
     with tempfile.TemporaryDirectory() as tmp_dir:
         fn = os.path.join(tmp_dir,'log.out')
         setup_logging(logging.INFO,filename=fn)
-        words = 'TESTOBIWAN'
+        words = 'TESTlegacysim'
         logger.info(words)
         ok = False
         with open(fn,'r') as tmp:

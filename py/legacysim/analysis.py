@@ -1,4 +1,4 @@
-"""Convenient classes to perform **Obiwan** analysis: image cutouts, catalog merging, catalog matching, computing time."""
+"""Convenient classes to perform **legacysim** analysis: image cutouts, catalog merging, catalog matching, computing time."""
 
 import os
 import logging
@@ -8,12 +8,12 @@ from scipy import stats,special
 from matplotlib import pyplot as plt
 import fitsio
 
-from .kenobi import find_file
+from .survey import find_file
 from .catalog import SimCatalog,RunCatalog
 from . import utils
 
 
-logger = logging.getLogger('obiwan.analysis')
+logger = logging.getLogger('legacysim.analysis')
 
 
 class BaseImage(object):
@@ -137,7 +137,7 @@ class BaseImage(object):
 
 class ImageAnalysis(BaseImage):
     """
-    Extend :class:`BaseImage` with **Obiwan**-related convenience functions.
+    Extend :class:`BaseImage` with **legacysim**-related convenience functions.
 
     Attributes
     ----------
@@ -156,23 +156,23 @@ class ImageAnalysis(BaseImage):
 
     _shape_default = (3600,3600)
 
-    def __init__(self, base_dir='.', brickname=None, kwargs_file=None, source='obiwan'):
+    def __init__(self, base_dir='.', brickname=None, kwargs_file=None, source='legacysim'):
         """
-        Set **Obiwan** or **legacypipe** file structure.
+        Set **legacysim** or **legacypipe** file structure.
 
         Parameters
         ----------
         base_dir : string, default='.'
-            **Obiwan** or **legacypipe** root file directory.
+            **legacysim** or **legacypipe** root file directory.
 
         brickname : string, default=None
             Brick name.
 
         kwargs_file : dict, default=None
-            Other arguments to file paths (e.g. :func:`obiwan.kenobi.get_randoms_id.keys`).
+            Other arguments to file paths (e.g. :func:`legacysim.survey.get_randoms_id.keys`).
 
-        source : string, default='obiwan'
-            If 'obiwan', search for **Obiwan** file names, else **legacypipe** file names.
+        source : string, default='legacysim'
+            If 'legacysim', search for **legacysim** file names, else **legacypipe** file names.
         """
         self.base_dir = base_dir
         self.brickname = brickname
@@ -181,7 +181,7 @@ class ImageAnalysis(BaseImage):
 
     def read_image(self, filetype='image-jpeg', band=None):
         """
-        Read **Obiwan** image and add :attr:`~BaseImage.img` to ``self``.
+        Read **legacysim** image and add :attr:`~BaseImage.img` to ``self``.
 
         Parameters
         ----------
@@ -208,7 +208,7 @@ class ImageAnalysis(BaseImage):
             from legacypipe.survey import get_rgb
             self.img = get_rgb(self.img,bands=band)
         else:
-            fn = find_file(self.base_dir,filetype,brickname=self.brickname,source='obiwan',band=band,**self.kwargs_file)
+            fn = find_file(self.base_dir,filetype,brickname=self.brickname,source='legacysim',band=band,**self.kwargs_file)
             super(ImageAnalysis,self).read_image(fn=fn,fmt=fmt,xmin=0,ymin=0)
 
     def read_image_wcs(self, filetype='image', band='g', ext=1):
@@ -238,7 +238,7 @@ class ImageAnalysis(BaseImage):
             stepsize = min(self.shape[:2]) / 10.
         self.wcs = wcs_pv2sip_hdr(self.header, stepsize=stepsize)
 
-    def read_sources(self, base_dir=None, filetype='randoms', source='obiwan'):
+    def read_sources(self, base_dir=None, filetype='randoms', source='legacysim'):
         """
         Read sources in the image add :attr:`sources` to ``self``.
 
@@ -248,10 +248,10 @@ class ImageAnalysis(BaseImage):
             If not ``None``, supersedes :attr:`base_dir`.
 
         filetype : string, default='randoms'
-            File type of sources. See :func:`obiwan.kenobi.find_file`.
+            File type of sources. See :func:`legacysim.survey.find_file`.
 
-        source : string, default='obiwan'
-            If 'obiwan', search for **Obiwan** file name, else **legacypipe** file name.
+        source : string, default='legacysim'
+            If 'legacysim', search for **legacysim** file name, else **legacypipe** file name.
             If not ``None``, supersedes :attr:`source`.
         """
         if base_dir is None: base_dir = self.base_dir
@@ -340,7 +340,7 @@ class ImageAnalysis(BaseImage):
 
 class CatalogMerging(object):
     """
-    Class to load, merge and save **legacyipe** and **Obiwan** catalogs.
+    Class to load, merge and save **legacyipe** and **legacysim** catalogs.
 
     Attributes
     ----------
@@ -366,27 +366,27 @@ class CatalogMerging(object):
         See below.
     """
 
-    def __init__(self, base_dir='.', runcat=None, bricknames=None, kwargs_files=None, source='obiwan', cats_dir=None, save_fn=None):
+    def __init__(self, base_dir='.', runcat=None, bricknames=None, kwargs_files=None, source='legacysim', cats_dir=None, save_fn=None):
         """
-        Set **Obiwan** or **legacypipe** file structure.
+        Set **legacysim** or **legacypipe** file structure.
 
         Parameters
         ----------
         base_dir : string, default='.'
-            **Obiwan** (if ``source == 'obiwan'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
+            **legacysim** (if ``source == 'legacysim'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
 
         runcat : RunCatalog, defaut=None
-            Run catalog used to select files from **Obiwan** or **legacypipe** data structure.
+            Run catalog used to select files from **legacysim** or **legacypipe** data structure.
             If provided, supersedes ``bricknames`` and ``kwargs_files``.
 
         bricknames : list, default=None
             List of brick names.
 
         kwargs_files : dict, list, default=None
-            Single or list of arguments to file paths (e.g. :func:`obiwan.kenobi.get_randoms_id.keys`).
+            Single or list of arguments to file paths (e.g. :func:`legacysim.survey.get_randoms_id.keys`).
 
-        source : string, default='obiwan'
-            If 'obiwan', search for **Obiwan** file names, else **legacypipe** file names.
+        source : string, default='legacysim'
+            If 'legacysim', search for **legacysim** file names, else **legacypipe** file names.
 
         cats_dir : string, default=None
             Directory where to save merged catalogs.
@@ -437,11 +437,11 @@ class CatalogMerging(object):
             Type of file to merge.
 
         base_dir : string, default=None
-            **Obiwan** (if ``source == 'obiwan'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
+            **legacysim** (if ``source == 'legacysim'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
             If not ``None``, supersedes :attr:`base_dir`.
 
         source : string, default=None
-            If 'obiwan', search for an **Obiwan** file name, else a **legacypipe** file name.
+            If 'legacysim', search for an **legacysim** file name, else a **legacypipe** file name.
             If not ``None``, supersedes :attr:`source`.
 
         keep_columns : list, default=None
@@ -477,7 +477,7 @@ class CatalogMerging(object):
 
         for run in self.runcat:
             if filetype in ['ps','ps-events']:
-                fn = find_file(base_dir=base_dir,filetype='ps',brickname=run.brickname,source='obiwan',**run.kwargs_file)
+                fn = find_file(base_dir=base_dir,filetype='ps',brickname=run.brickname,source='legacysim',**run.kwargs_file)
                 tmp = read_catalog(fn,ext=1)
                 if tmp is None: continue
                 tf = tmp.unixtime.max()
@@ -694,7 +694,7 @@ class CatalogMatching(CatalogMerging):
         """
         Add :attr:`input` and :attr:`output` **Tractor** catalog to ``self``.
 
-        By default, the injected sources of **Obiwan** randoms only are considered for ``input``.
+        By default, the injected sources of **legacysim** randoms only are considered for ``input``.
         These can be merged to the sources fitted by **legacypipe** by setting ``add_input_tractor``.
 
         Parameters
@@ -706,8 +706,8 @@ class CatalogMatching(CatalogMerging):
 
         """
         self.add_input_tractor = add_input_tractor
-        self.set_catalog(name='input',filetype='randoms',source='obiwan')
-        self.set_catalog(name='output',filetype='tractor',source='obiwan')
+        self.set_catalog(name='input',filetype='randoms',source='legacysim')
+        self.set_catalog(name='output',filetype='tractor',source='legacysim')
         if add_input_tractor:
             kwargs = {}
             if isinstance(add_input_tractor,str): kwargs = {'base_dir':add_input_tractor}
@@ -836,7 +836,7 @@ class CatalogMatching(CatalogMerging):
             cat = full_input[self.injected] if injected else full_input
             cat.fill(output,index_self='after')
         if write:
-            self.write_catalog(cat=cat,filetype='match_%s' % base,source='obiwan',**kwargs_write)
+            self.write_catalog(cat=cat,filetype='match_%s' % base,source='legacysim',**kwargs_write)
         return cat
 
     @utils.saveplot()
@@ -1123,7 +1123,7 @@ class ResourceEventAnalysis(CatalogMerging):
         ax : plt.axes
             Where to plot image.
             One can also provide figure file name ``fn``.
-            See :func:`obiwan.utils.saveplot`.
+            See :func:`legacysim.utils.saveplot`.
 
         events : array-like, string, default=None
             Passed on to :meth:`process_events`.
@@ -1300,7 +1300,7 @@ class ResourceAnalysis(ResourceEventAnalysis):
         ax : plt.axes
             Where to plot the time series.
             One can also provide figure file name ``fn``.
-            See :func:`obiwan.utils.saveplot`.
+            See :func:`legacysim.utils.saveplot`.
 
         series : SimCatalog, default=None
             Time series to analyze.
@@ -1316,7 +1316,7 @@ class ResourceAnalysis(ResourceEventAnalysis):
 
         kwargs_fig : dict, default=None
             Extra arguments for :func:`pyplot.savefig`.
-            See :func:`obiwan.utils.saveplot`.
+            See :func:`legacysim.utils.saveplot`.
 
         kwargs_plot : dict, default=None
             Extra arguments for :func:`pyplot.plot`.
@@ -1360,7 +1360,7 @@ class ResourceAnalysis(ResourceEventAnalysis):
         ax : plt.axes
             Where to plot the time series.
             One can also provide figure file name ``fn``.
-            See :func:`obiwan.utils.saveplot`.
+            See :func:`legacysim.utils.saveplot`.
 
         events : array-like, string, default='stage'
             Passed on to :meth:`~ResourceEventAnalysis.process_events`.

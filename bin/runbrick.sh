@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script for running the obiwan code within a Shifter container at NERSC
+# Script for running the legacysim code within a Shifter container at NERSC
 
 # Don't add ~/.local/ to Python's sys.path
 export PYTHONNOUSERSITE=1
@@ -17,7 +17,7 @@ export KMP_AFFINITY=disabled
 # Can detect Cori KNL node (96 GB) via:
 # grep -q "Xeon Phi" /proc/cpuinfo && echo Yes
 
-#cd /src/obiwan/py
+#cd /src/legacysim/py
 cd ../py
 
 # Defaults
@@ -98,7 +98,7 @@ mkdir -p "${logfn%/*}"
 echo "Logging to: $logfn"
 echo "Running on $(hostname)"
 
-env=($(python obiwan/batch/environment_manager.py --module-dir "/src/" --outdir "$legpipedir" --brick "$brick" --full-pythonpath 2> /dev/null))
+env=($(python legacysim/batch/environment_manager.py --module-dir "/src/" --outdir "$legpipedir" --brick "$brick" --full-pythonpath 2> /dev/null))
 for exp in ${env[@]}
 do
   export "$exp"
@@ -121,7 +121,7 @@ echo >> "$logfn"
 echo -e "\nStarting on $(hostname)\n" >> "$logfn"
 echo "-----------------------------------------------------------------------------------------" >> "$logfn"
 
-python -O obiwan/runbrick.py \
+python -O legacysim/runbrick.py \
       --brick "$brick" \
       --outdir "${outdir}" \
       --fileid "${fileid}" \

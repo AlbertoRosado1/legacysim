@@ -2,8 +2,8 @@
 # Set up the legacypipe environment
 # and launch mpi_main_runbricks.py (default) or mpi_script_runbricks.py (option -s).
 
-# add here obiwan to python path if necessary
-export PYTHONPATH=$HOME/obiwan/py:$PYTHONPATH
+# add here legacysim to python path if necessary
+export PYTHONPATH=$HOME/legacysim/py:$PYTHONPATH
 
 # set number of OpenMP threads here
 export OMP_NUM_THREADS=8

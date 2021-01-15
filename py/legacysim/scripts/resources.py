@@ -12,8 +12,8 @@ import logging
 
 from matplotlib import pyplot as plt
 
-from obiwan import RunCatalog,find_file,setup_logging,utils
-from obiwan.analysis import ResourceAnalysis
+from legacysim import RunCatalog,find_file,setup_logging,utils
+from legacysim.analysis import ResourceAnalysis
 
 
 logger = logging.getLogger('resources')
@@ -34,9 +34,9 @@ def main(args=None):
 
     if opt.do == 'single':
         for run in runcat:
-            resource = ResourceAnalysis(base_dir=opt.output_dir,bricknames=run.brickname,source='obiwan',kwargs_files=run.kwargs_file)
+            resource = ResourceAnalysis(base_dir=opt.output_dir,bricknames=run.brickname,source='legacysim',kwargs_files=run.kwargs_file)
             if opt.plot_fn is None:
-                plot_fn = find_file(base_dir=opt.output_dir,filetype='ps',brickname=run.brickname,source='obiwan',**run.kwargs_file)
+                plot_fn = find_file(base_dir=opt.output_dir,filetype='ps',brickname=run.brickname,source='legacysim',**run.kwargs_file)
                 plot_fn = plot_fn[:-len('.fits')] + '.png'
             else: plot_fn = opt.plot_fn % {**{'outdir':opt.output_dir,'brick':run.brickname},**run.kwargs_file}
             resource.set_catalog(name='series',filetype='ps')

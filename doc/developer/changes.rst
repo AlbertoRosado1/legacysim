@@ -6,6 +6,7 @@ Change Log
 DR9 (2021-01-12)
 ------------------
 
+* Name changes from **Obiwan** to **legacysim**.
 * Post-processing scripts.
 * **legacypipe** version handling for DR9.
 

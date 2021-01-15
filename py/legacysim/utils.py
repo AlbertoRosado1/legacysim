@@ -1,4 +1,4 @@
-"""Convenient functions to handle **Obiwan** inputs/outputs."""
+"""Convenient functions to handle **legacysim** inputs/outputs."""
 
 import os
 import sys
@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from astrometry.libkd import spherematch
 
 
-logger = logging.getLogger('obiwan.utils')
+logger = logging.getLogger('legacysim.utils')
 
 
 def setup_logging(level=logging.INFO, stream=sys.stdout, filename=None, filemode='w', **kwargs):

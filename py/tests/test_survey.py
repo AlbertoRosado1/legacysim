@@ -4,9 +4,10 @@ import logging
 import numpy as np
 import galsim
 
-from obiwan import setup_logging
-from obiwan.kenobi import (find_file,find_legacypipe_file,find_obiwan_file,get_git_version,get_version,get_randoms_id,
-                            get_survey,DecamSim,NinetyPrimeMosaicSim,CosmosSim,LegacySurveySim,GSImage)
+from legacysim import setup_logging
+from legacysim.survey import (find_file,find_legacypipe_file,find_legacysim_file,get_git_version,get_version,get_randoms_id,
+                            get_survey,DecamSim,NinetyPrimeMosaicSim,CosmosSim,LegacySurveySim)
+from legacysim.image import GSImage
 
 
 setup_logging(logging.DEBUG)
@@ -18,17 +19,17 @@ def test_paths():
     assert os.path.normpath(fn) == os.path.normpath('tests/survey-bricks.fits.gz')
     fn2 = find_file('tests','bricks',brickname='2599p187',source='legacypipe',fileid=0,rowstart=0,skipid=0)
     assert fn2 == fn
-    fn = find_obiwan_file('tests','randoms',brickname='2599p187',fileid=1,rowstart=2,skipid=3)
-    assert os.path.normpath(fn) == os.path.normpath('tests/obiwan/259/2599p187/file1_rs2_skip3/randoms-2599p187.fits')
-    fn2 = find_file(base_dir='tests',filetype='randoms',brickname='2599p187',source='obiwan',fileid=1,rowstart=2,skipid=3)
+    fn = find_legacysim_file('tests','randoms',brickname='2599p187',fileid=1,rowstart=2,skipid=3)
+    assert os.path.normpath(fn) == os.path.normpath('tests/legacysim/259/2599p187/file1_rs2_skip3/randoms-2599p187.fits')
+    fn2 = find_file(base_dir='tests',filetype='randoms',brickname='2599p187',source='legacysim',fileid=1,rowstart=2,skipid=3)
     assert fn2 == fn
-    fn = find_file(base_dir='tests',filetype='pickle',brickname='2599p187',source='obiwan',fileid=1,rowstart=2,skipid=3,stage='fitblobs')
+    fn = find_file(base_dir='tests',filetype='pickle',brickname='2599p187',source='legacysim',fileid=1,rowstart=2,skipid=3,stage='fitblobs')
     assert os.path.normpath(fn) == os.path.normpath('tests/pickle/259/2599p187/file1_rs2_skip3/pickle-2599p187-fitblobs.pickle')
-    fn = find_file(base_dir='.',filetype='checkpoint',brickname='2599p187',source='obiwan',fileid=1,rowstart=2,skipid=3)
+    fn = find_file(base_dir='.',filetype='checkpoint',brickname='2599p187',source='legacysim',fileid=1,rowstart=2,skipid=3)
     assert os.path.normpath(fn) == os.path.normpath('./checkpoint/259/2599p187/file1_rs2_skip3/checkpoint-2599p187.pickle')
-    fn = find_file(base_dir='.',filetype='log',brickname='2599p187',source='obiwan',fileid=1,rowstart=2,skipid=3)
+    fn = find_file(base_dir='.',filetype='log',brickname='2599p187',source='legacysim',fileid=1,rowstart=2,skipid=3)
     assert os.path.normpath(fn) == os.path.normpath('./log/259/2599p187/file1_rs2_skip3/log-2599p187.log')
-    fn = find_file(base_dir='.',filetype='ps',brickname='2599p187',source='obiwan',fileid=1,rowstart=2,skipid=3)
+    fn = find_file(base_dir='.',filetype='ps',brickname='2599p187',source='legacysim',fileid=1,rowstart=2,skipid=3)
     assert os.path.normpath(fn) == os.path.normpath('./metrics/259/2599p187/file1_rs2_skip3/ps-2599p187.fits')
 
 

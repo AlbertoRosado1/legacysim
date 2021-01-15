@@ -1,64 +1,74 @@
 API
 ===
 
-obiwan.runbrick module
+legacysim.runbrick module
+-------------------------
+.. automodule:: legacysim.runbrick
+  :members:
+  :show-inheritance:
+
+legacysim.survey module
+-----------------------
+.. automodule:: legacysim.survey
+  :members:
+  :show-inheritance:
+
+legacysim.image module
+----------------------
+.. automodule:: legacysim.image
+  :members:
+  :show-inheritance:
+
+legacysim.catalog module
 ------------------------
-.. automodule:: obiwan.runbrick
+.. automodule:: legacysim.catalog
   :members:
   :show-inheritance:
 
-obiwan.kenobi module
+legacysim.utils module
+----------------------
+.. automodule:: legacysim.utils
+  :members:
+  :show-inheritance:
+
+legacysim.analysis module
+-------------------------
+.. automodule:: legacysim.analysis
+  :members:
+  :show-inheritance:
+
+legacysim.scripts module
 ------------------------
-.. automodule:: obiwan.kenobi
+.. automodule:: legacysim.scripts.check
   :members:
   :show-inheritance:
 
-obiwan.catalog module
-------------------------
-.. automodule:: obiwan.catalog
+.. automodule:: legacysim.scripts.resources
   :members:
   :show-inheritance:
 
-obiwan.utils module
-------------------------
-.. automodule:: obiwan.utils
+.. automodule:: legacysim.scripts.merge
   :members:
   :show-inheritance:
 
-obiwan.analysis module
-------------------------
-.. automodule:: obiwan.analysis
+.. automodule:: legacysim.scripts.match
   :members:
   :show-inheritance:
 
-obiwan.scripts module
-------------------------
-.. automodule:: obiwan.scripts.check
+.. automodule:: legacysim.scripts.cutout
   :members:
   :show-inheritance:
 
-.. automodule:: obiwan.scripts.resources
+.. automodule:: legacysim.scripts.runlist
   :members:
   :show-inheritance:
 
-.. automodule:: obiwan.scripts.merge
+legacysim.batch module
+----------------------
+.. automodule:: legacysim.batch.task_manager
   :members:
   :show-inheritance:
 
-.. automodule:: obiwan.scripts.match
-  :members:
-  :show-inheritance:
-
-.. automodule:: obiwan.scripts.cutout
-  :members:
-  :show-inheritance:
-
-obiwan.batch module
-------------------------
-.. automodule:: obiwan.batch.task_manager
-  :members:
-  :show-inheritance:
-
-.. automodule:: obiwan.batch.environment_manager
+.. automodule:: legacysim.batch.environment_manager
   :members:
   :show-inheritance:

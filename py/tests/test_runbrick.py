@@ -11,11 +11,11 @@ from tractor.sersic import SersicGalaxy
 from legacypipe import runbrick as lprunbrick
 from legacypipe.survey import wcs_for_brick
 
-from obiwan import setup_logging,LegacySurveySim,find_file,SimCatalog,BrickCatalog,runbrick,utils
-from obiwan.batch import EnvironmentManager
+from legacysim import setup_logging,LegacySurveySim,find_file,SimCatalog,BrickCatalog,runbrick,utils
+from legacysim.batch import EnvironmentManager
 
 
-logger = logging.getLogger('obiwan.test_runbrick')
+logger = logging.getLogger('legacysim.test_runbrick')
 
 
 setup_logging()
@@ -52,7 +52,7 @@ def generate_randoms(brickname, zoom=(0,3600,0,3600), zoom_margin=5, mag_range=(
 def test_eq_legacypipe():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-    output_dir = 'out-testcase3-obiwan'
+    output_dir = 'out-testcase3-legacysim'
     legacypipe_dir = 'out-testcase3-legacypipe'
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
@@ -75,31 +75,31 @@ def test_eq_legacypipe():
 
     legacypipe_fn = find_file(base_dir=legacypipe_dir,filetype='tractor',source='legacypipe',brickname=brickname)
     tractor_legacypipe = SimCatalog(legacypipe_fn)
-    obiwan_fn = find_file(base_dir=output_dir,filetype='tractor',source='obiwan',brickname=brickname)
-    tractor_obiwan = SimCatalog(obiwan_fn)
-    assert tractor_obiwan == tractor_legacypipe
+    legacysim_fn = find_file(base_dir=output_dir,filetype='tractor',source='legacysim',brickname=brickname)
+    tractor_legacysim = SimCatalog(legacysim_fn)
+    assert tractor_legacysim == tractor_legacypipe
 
     # check header
     header_legacypipe = fitsio.read_header(legacypipe_fn)
-    header_obiwan = fitsio.read_header(obiwan_fn)
+    header_legacysim = fitsio.read_header(legacysim_fn)
     header_randoms = fitsio.read_header(find_file(base_dir=output_dir,filetype='randoms',brickname=brickname))
-    #assert len(header_obiwan) == len(header_randoms)
+    #assert len(header_legacysim) == len(header_randoms)
     for key in header_randoms:
         if key != 'PRODTYPE':
-            assert header_obiwan[key] == header_randoms[key]
-    assert 'OBIWANV' in header_obiwan
-    assert 'galsim' in [header_obiwan[key] for key in header_obiwan]
+            assert header_legacysim[key] == header_randoms[key]
+    assert 'LEGSIMV' in header_legacysim
+    assert 'galsim' in [header_legacysim[key] for key in header_legacysim]
     stages = [val for key,val in EnvironmentManager.shorts_stage.items() if key != 'wise_forced']
     for stage in stages:
-        assert ('OBV_%s' % stage) in header_obiwan
-    # Obiwan: version + comment (2), galsim (2) and OBV
-    assert len(header_obiwan) == len(header_legacypipe) + 2 + 2 + len(stages)
+        assert ('LSV_%s' % stage) in header_legacysim
+    # legacysim: version + comment (2), galsim (2) and OBV
+    assert len(header_legacysim) == len(header_legacypipe) + 2 + 2 + len(stages)
 
 
 def test_simblobs():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-    output_dir = 'out-testcase3-obiwan'
+    output_dir = 'out-testcase3-legacysim'
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
     randoms_fn = os.path.join(output_dir,'input_randoms.fits')
@@ -124,11 +124,11 @@ def test_simblobs():
                         '--sim-blobs',
                         '--threads', 1])
 
-    tractor_simblobs = SimCatalog(find_file(base_dir=output_dir,filetype='tractor',source='obiwan',brickname=brickname,fileid=1))
+    tractor_simblobs = SimCatalog(find_file(base_dir=output_dir,filetype='tractor',source='legacysim',brickname=brickname,fileid=1))
     indin = randoms.match_radec(tractor_simblobs,radius_in_degree=0.05/3600.,nearest=True)[0]
     assert indin.size == randoms.size
 
-    tractor_all = SimCatalog(find_file(base_dir=output_dir,filetype='tractor',source='obiwan',brickname=brickname))
+    tractor_all = SimCatalog(find_file(base_dir=output_dir,filetype='tractor',source='legacysim',brickname=brickname))
     indin = tractor_all.match_radec(tractor_simblobs,radius_in_degree=0.001/3600.,nearest=True,return_distance=True)[0]
     assert indin.size == tractor_simblobs.size
 
@@ -136,7 +136,7 @@ def test_simblobs():
 def test_case3():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-    output_dir = 'out-testcase3-obiwan'
+    output_dir = 'out-testcase3-legacysim'
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
     checkpoint_fn = os.path.join(output_dir, 'checkpoint.pickle')
@@ -224,7 +224,7 @@ def test_case3():
 def test_case3_shape():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-    output_dir = 'out-testcase3-obiwan-shape'
+    output_dir = 'out-testcase3-legacysim-shape'
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
     checkpoint_fn = os.path.join(output_dir, 'checkpoint.pickle')
@@ -313,7 +313,7 @@ def test_case3_shape():
 def test_mzlsbass2():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'mzlsbass2')
-    output_dir = 'out-mzlsbass2-obiwan'
+    output_dir = 'out-mzlsbass2-legacysim'
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
 
@@ -374,7 +374,7 @@ def test_mzlsbass2():
 def test_rerun():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-    output_dirs = ['out-case3-obiwan-rerun-%d' % i for i in range(1,3)]
+    output_dirs = ['out-case3-legacysim-rerun-%d' % i for i in range(1,3)]
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
     for output_dir in output_dirs:
@@ -398,7 +398,7 @@ def test_rerun():
 
         runbrick.main(args=common_args + ['--ran-fn',randoms_fn, '--force-all', '--no-write','--outdir', output_dirs[0]])
 
-        fn = find_file(base_dir=output_dirs[0],filetype='tractor',brickname=brickname,source='obiwan')
+        fn = find_file(base_dir=output_dirs[0],filetype='tractor',brickname=brickname,source='legacysim')
         tractor_ref = SimCatalog(fn)
 
         for stages in [['outliers','writecat'],
@@ -413,7 +413,7 @@ def test_rerun():
                     args += ['--ran-fn',randoms_fn]
                 runbrick.main(args=args)
 
-            fn = find_file(base_dir=output_dirs[1],filetype='tractor',brickname=brickname,source='obiwan')
+            fn = find_file(base_dir=output_dirs[1],filetype='tractor',brickname=brickname,source='legacysim')
             tractor = SimCatalog(fn)
 
             assert tractor == tractor_ref
@@ -422,7 +422,7 @@ def test_rerun():
 def test_skipid():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-    output_dir = 'out-case3-obiwan-skipid'
+    output_dir = 'out-case3-legacysim-skipid'
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
     checkpoint_fn = os.path.join(output_dir,'checkpoint.pickle')
@@ -448,14 +448,14 @@ def test_skipid():
 
         runbrick.main(args=common_args + ['--force-all', '--ran-fn', randoms_fn])
 
-        fn = find_file(base_dir=output_dir,filetype='randoms',brickname=brickname,source='obiwan')
+        fn = find_file(base_dir=output_dir,filetype='randoms',brickname=brickname,source='legacysim')
         randoms_skip0 = SimCatalog(fn)
 
         if '--col-radius' in extra_args and extra_args[extra_args.index('--col-radius')-1] > 3000:
             assert (randoms_skip0.collided.sum() > 0) and (randoms_skip0.collided.sum() < randoms_skip0.size)
 
         runbrick.main(args=common_args + ['--skipid',1])
-        fn = find_file(base_dir=output_dir,filetype='randoms',brickname=brickname,source='obiwan',skipid=1)
+        fn = find_file(base_dir=output_dir,filetype='randoms',brickname=brickname,source='legacysim',skipid=1)
         randoms_skip1 = SimCatalog(fn)
         for field in ['ra','dec']:
             assert np.all(randoms_skip1.get(field) == randoms_skip0.get(field)[randoms_skip0.collided])

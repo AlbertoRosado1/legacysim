@@ -1,4 +1,4 @@
-"""**Obiwan** main executable, equivalent of :mod:`legacypipe.runbrick`."""
+"""**legacysim** main executable, extend :mod:`legacypipe.runbrick`."""
 
 import os
 import sys
@@ -10,23 +10,23 @@ import legacypipe
 from legacypipe import runbrick
 from legacypipe.utils import RunbrickError, NothingToDoError
 
-from obiwan import SimCatalog, utils, setup_logging
-from obiwan.utils import MonkeyPatching
-from obiwan.batch import EnvironmentManager
+from legacysim import SimCatalog, utils, setup_logging
+from legacysim.utils import MonkeyPatching
+from legacysim.batch import EnvironmentManager
 
 
-logger = logging.getLogger('obiwan.runbrick')
+logger = logging.getLogger('legacysim.runbrick')
 
 
 def wrapper_get_version_header(legacypipe_get_version_header):
-    """Wrap :func:`legacypipe.survey.get_version_header` to add **Obiwan** version."""
+    """Wrap :func:`legacypipe.survey.get_version_header` to add **legacysim** version."""
     def get_version_header(*args, **kwargs):
         import fitsio
-        from obiwan.kenobi import get_version
+        from legacysim.survey import get_version
         hdr = fitsio.FITSHDR()
-        s = 'Obiwan running legacypipe'
+        s = 'legacysim running legacypipe'
         hdr.add_record(dict(name='COMMENT',value=s,comment=s))
-        hdr.add_record(dict(name='OBIWANV',value=get_version(),comment='obiwan git version'))
+        hdr.add_record(dict(name='LEGSIMV',value=get_version(),comment='legacysim git version'))
         for record in legacypipe_get_version_header(*args,**kwargs).records():
             hdr.add_record(record)
         return hdr
@@ -34,7 +34,7 @@ def wrapper_get_version_header(legacypipe_get_version_header):
 
 
 def wrapper_get_dependency_versions(legacypipe_get_dependency_versions):
-    """Wrap :func:`legacypipe.survey.get_dependency_versions` to add **Obiwan** dependency versions (galsim)."""
+    """Wrap :func:`legacypipe.survey.get_dependency_versions` to add **legacysim** dependency versions (galsim)."""
     def get_dependency_versions(*args, **kwargs):
         headers = legacypipe_get_dependency_versions(*args,**kwargs)
         import galsim
@@ -47,18 +47,18 @@ def wrapper_get_dependency_versions(legacypipe_get_dependency_versions):
 
 
 def wrapper_add_stage_version(legacypipe_add_stage_version):
-    """Wrap :func:`legacypipe.runbrick._add_stage_version` to add **Obiwan** stage version."""
+    """Wrap :func:`legacypipe.runbrick._add_stage_version` to add **legacysim** stage version."""
     def _add_stage_version(version_header, short, stagename):
-        from obiwan.kenobi import get_version
-        version_header.add_record(dict(name='OBV_%s'%short, value=get_version(),
-                                       help='obiwan version for stage_%s'%stagename))
+        from legacysim.survey import get_version
+        version_header.add_record(dict(name='LSV_%s'%short, value=get_version(),
+                                       help='legacysim version for stage_%s'%stagename))
         legacypipe_add_stage_version(version_header, short, stagename)
     return _add_stage_version
 
 
 def get_parser():
     """
-    Append **Obiwan** arguments to those of :func:`legacypipe.runbrick.get_parser`.
+    Append **legacysim** arguments to those of :func:`legacypipe.runbrick.get_parser`.
 
     Returns
     -------
@@ -68,10 +68,10 @@ def get_parser():
     args_runbrick : list
         List of **legacypipe**-specific arguments.
     """
-    de = ('Main "Obiwan" script for the Legacy Survey (DECaLS, MzLS, Bok) data reductions.')
+    de = ('Main "legacysim" script for the Legacy Survey (DECaLS, MzLS, Bok) data reductions.')
     ep = """
     e.g., to run a small field containing a cluster:
-python -u obiwan/runbrick.py --plots --brick 2440p070 --zoom 1900 2400 450 950 -P pickles/runbrick-cluster-%%s.pickle"""
+python -u legacysim/runbrick.py --plots --brick 2440p070 --zoom 1900 2400 450 950 -P pickles/runbrick-cluster-%%s.pickle"""
     parser = argparse.ArgumentParser(description=de,epilog=ep,add_help=False,parents=[runbrick.get_parser()],
                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -86,8 +86,8 @@ python -u obiwan/runbrick.py --plots --brick 2440p070 --zoom 1900 2400 450 950 -
     checkpoint_filename.nargs = '?'
 
     args_runbrick = utils.list_parser_dest(parser,exclude=['verbose','help'])
-    # Obiwan arguments
-    group = parser.add_argument_group(title='Obiwan',description='Obiwan-specific arguments')
+    # legacysim arguments
+    group = parser.add_argument_group(title='legacysim',description='legacysim-specific arguments')
     group.add_argument('--subset', type=int, default=0,
                         help='COSMOS subset number [0 to 4, 10 to 12], only used if --run cosmos')
     group.add_argument('--ran-fn', default=None, help='Randoms filename; if not provided, run equivalent to legacypipe.runbrick')
@@ -119,7 +119,7 @@ python -u obiwan/runbrick.py --plots --brick 2440p070 --zoom 1900 2400 450 950 -
 
 def get_runbrick_kwargs(args_runbrick, **opt):
     """
-    Convert :mod:`obiwan.runbrick` command line options into ``survey`` and ``**kwargs`` for :func:`run_brick`.
+    Convert :mod:`legacysim.runbrick` command line options into ``survey`` and ``**kwargs`` for :func:`run_brick`.
 
     Wraps :func:`legacypipe.runbrick.get_runbrick_kwargs`.
 
@@ -129,7 +129,7 @@ def get_runbrick_kwargs(args_runbrick, **opt):
         List of **legacypipe**-specific arguments.
 
     opt : dict
-        Dictionary of the command line options for :mod:`obiwan.runbrick`.
+        Dictionary of the command line options for :mod:`legacysim.runbrick`.
 
     Returns
     -------
@@ -142,12 +142,12 @@ def get_runbrick_kwargs(args_runbrick, **opt):
             run_brick(brickname, survey, **kwargs)
 
     """
-    from obiwan.kenobi import get_randoms_id
+    from legacysim.survey import get_randoms_id
     opt['kwargs_file'] = get_randoms_id.as_dict(**opt)
     kwargs_survey = {key:opt[key] for key in \
                           ['sim_stamp','add_sim_noise','image_eq_model','seed','kwargs_file',
                            'survey_dir','output_dir','cache_dir','subset']}
-    from obiwan.kenobi import get_survey
+    from legacysim.survey import get_survey
     survey = get_survey(opt.get('run',None),**kwargs_survey)
     logger.info(survey)
     if opt['pickle_pat'] is None:
@@ -176,7 +176,7 @@ def run_brick(opt, survey, **kwargs):
     Parameters
     ----------
     opt : Namespace
-        Command line options for :mod:`obiwan.runbrick`.
+        Command line options for :mod:`legacysim.runbrick`.
 
     survey : LegacySurveySim instance
         Survey, without ``simcat``.
@@ -211,14 +211,14 @@ def run_brick(opt, survey, **kwargs):
             return toret
 
         if opt.skipid > 0:
-            from obiwan import find_file
+            from legacysim import find_file
             kwargs_file = {**survey.kwargs_file,**{'skipid':opt.skipid-1}}
-            fn = find_file(base_dir=survey.output_dir,filetype='randoms',brickname=opt.brick,source='obiwan',**kwargs_file)
+            fn = find_file(base_dir=survey.output_dir,filetype='randoms',brickname=opt.brick,source='legacysim',**kwargs_file)
             simcat = SimCatalog(fn)
             simcat.cut(simcat.collided)
         else:
             simcat = SimCatalog(opt.ran_fn)
-            simcat.fill_obiwan(survey=survey)
+            simcat.fill_legacysim(survey=survey)
             simcat.cut(simcat.brickname == opt.brick)
             if opt.nobj >= 0:
                 simcat = simcat[opt.rowstart:opt.rowstart+opt.nobj]

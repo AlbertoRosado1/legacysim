@@ -10,8 +10,8 @@ For details, run::
 import argparse
 import logging
 
-from obiwan import RunCatalog,get_randoms_id,utils,setup_logging
-from obiwan.batch import EnvironmentManager
+from legacysim import RunCatalog,get_randoms_id,utils,setup_logging
+from legacysim.batch import EnvironmentManager
 
 
 logger = logging.getLogger('check')

@@ -13,8 +13,8 @@ import logging
 
 from matplotlib import pyplot as plt
 
-from obiwan import RunCatalog,utils,setup_logging
-from obiwan.analysis import CatalogMatching
+from legacysim import RunCatalog,utils,setup_logging
+from legacysim.analysis import CatalogMatching
 
 
 logger = logging.getLogger('match')
@@ -28,7 +28,7 @@ def main(args=None):
     parser.add_argument('--tractor', type=str, default=None,
                         help='File name of merged Tractor catalog')
     parser.add_argument('--tractor-legacypipe', nargs='?', type=str, default=False, const=None,
-                        help='Add legacypipe fitted sources to the random injected sources for the matching with Obiwan Tractor catalogs. \
+                        help='Add legacypipe fitted sources to the random injected sources for the matching with legacysim Tractor catalogs. \
                         Load legacypipe fitted sources from legacypipe directory or file name if provided.')
     parser.add_argument('--radius', type=float, default=1.5, help='Matching radius in arcseconds')
     parser.add_argument('--base', type=str, default='input', help='Catalog to be used as base for merging')
@@ -56,7 +56,7 @@ def main(args=None):
     for filetype in ['randoms','tractor']:
         cat_fn = getattr(opt,filetype)
         if cat_fn is not None:
-            cat = match.read_catalog(cat_fn=cat_fn,filetype=filetype,source='obiwan')
+            cat = match.read_catalog(cat_fn=cat_fn,filetype=filetype,source='legacysim')
             match.runcat = RunCatalog.from_catalog(cat,stages='writecat')
     if opt.tractor_legacypipe is None:
         add_input_tractor = True

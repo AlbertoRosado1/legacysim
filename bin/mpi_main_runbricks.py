@@ -1,8 +1,8 @@
-"""Run directly obiwan.runbrick.main."""
+"""Run directly legacysim.runbrick.main."""
 
 import os
-from obiwan import RunCatalog,find_file,runbrick
-from obiwan.batch import TaskManager,run_shell,get_pythonpath
+from legacysim import RunCatalog,find_file,runbrick
+from legacysim.batch import TaskManager,run_shell,get_pythonpath
 import settings
 
 ntasks = int(os.getenv('SLURM_NTASKS','1'))
@@ -32,7 +32,7 @@ with TaskManager(ntasks=ntasks) as tm:
         run_shell(command)
 
         # if you do not care about package versions you can directly run runbrick.main() as below:
-        #from obiwan.batch import EnvironmentManager
+        #from legacysim.batch import EnvironmentManager
         #with EnvironmentManager(base_dir=settings.legacypipe_output_dir,brickname=run.brickname):
 
         #    command = ['--brick',run.brickname,'--threads',threads,'--outdir',settings.output_dir,'--run',settings.run,

@@ -14,11 +14,11 @@ import fitsio
 from astrometry.util import fits
 from legacypipe.survey import LegacySurveyData,wcs_for_brick
 
-from .kenobi import find_file,get_randoms_id
+from .survey import find_file,get_randoms_id
 from . import utils
 
 
-logger = logging.getLogger('obiwan.catalog')
+logger = logging.getLogger('legacysim.catalog')
 
 
 class BaseCatalog(fits.tabledata):
@@ -501,16 +501,16 @@ class BaseCatalog(fits.tabledata):
 
 
 class SimCatalog(BaseCatalog):
-    """Extend :class:`BaseCatalog` with convenient methods for **Obiwan** randoms."""
+    """Extend :class:`BaseCatalog` with convenient methods for **legacysim** randoms."""
 
-    def fill_obiwan(self, survey=None):
+    def fill_legacysim(self, survey=None):
         """
-        Fill ``self`` with columns required for **Obiwan** (if not already in ``self``):
+        Fill ``self`` with columns required for **legacysim** (if not already in ``self``):
 
             - ``id`` : defaults to :meth:`index`
             - ``brickname``, (brick) ``bx``, ``by`` coordinates: based on ``survey`` and ``ra``, ``dec``.
 
-        Columns mandatory for **Obiwan** are:
+        Columns mandatory for **legacysim** are:
 
             - ``ra``, ``dec`` : coordinates (degree)
             - ``flux_g``, ``flux_r``, ``flux_z`` : including galactic extinction (nanomaggies)
@@ -1052,7 +1052,7 @@ class RunCatalog(BaseCatalog):
     """
     Extend ``BaseCatalog`` with convenient methods for run (defined by brick x randoms id x stages id) lists.
 
-    Useful to schedule jobs and navigate through the **Obiwan** or **legacypipe** file structure.
+    Useful to schedule jobs and navigate through the **legacysim** or **legacypipe** file structure.
 
     Attributes
     ----------
@@ -1116,7 +1116,7 @@ class RunCatalog(BaseCatalog):
     @staticmethod
     def get_output_parser(parser=None, add_stages=False, add_filetype=False, add_source=False):
         """
-        Add parser arguments to reconstruct runs from **legacypipe** or **Obiwan** file structure.
+        Add parser arguments to reconstruct runs from **legacypipe** or **legacysim** file structure.
 
         Parameters
         ----------
@@ -1147,13 +1147,13 @@ class RunCatalog(BaseCatalog):
         if add_filetype:
             parser.add_argument('--filetype', type=str, default=None, help='File type to search for.')
         if add_source:
-            parser.add_argument('--source', type=str, choices=['obiwan','legacypipe'], default='obiwan', help='legacypipe or obiwan file structure?')
+            parser.add_argument('--source', type=str, choices=['legacysim','legacypipe'], default='legacysim', help='legacypipe or legacysim file structure?')
         return parser
 
     @staticmethod
     def kwargs_files_from_cmdline(opt):
         """
-        Return list of :class:`obiwan.kenobi.get_randoms_id` dictionaries from command-line arguments.
+        Return list of :class:`legacysim.survey.get_randoms_id` dictionaries from command-line arguments.
 
         Parameters
         ----------
@@ -1163,7 +1163,7 @@ class RunCatalog(BaseCatalog):
         Returns
         -------
         kwargs_files : dict list
-            List of :class:`~obiwan.kenobi.get_randoms_id` dictionaries.
+            List of :class:`~legacysim.survey.get_randoms_id` dictionaries.
         """
         if isinstance(opt,dict):
             opt = dict(opt)
@@ -1218,7 +1218,7 @@ class RunCatalog(BaseCatalog):
 
     def mask_cmdline(self, opt):
         """
-        Return mask corresponding to command-line arguments in ``opt``: 'brick', :meth:`~obiwan.kenobi.get_randoms_id.keys()`, 'stages', 'list'.
+        Return mask corresponding to command-line arguments in ``opt``: 'brick', :meth:`~legacysim.survey.get_randoms_id.keys`, 'stages', 'list'.
 
         If an argument is not in opt or is ``None``, no mask is applied.
 
@@ -1265,7 +1265,7 @@ class RunCatalog(BaseCatalog):
         else:
             getopt = getattr
             setopt = setattr
-        setopt(opt,'source',getopt(opt,'source','obiwan'))
+        setopt(opt,'source',getopt(opt,'source','legacysim'))
         setopt(opt,'stages',getopt(opt,'stages',None))
         setopt(opt,'pickle_pat',getopt(opt,'pickle_pat',None))
         if getopt(opt,'filetype',None) is None:
@@ -1280,7 +1280,7 @@ class RunCatalog(BaseCatalog):
         If ``force_from_disk == True``, further restrict to those runs for which catalogs are written on disk
         (default file type is 'tractor' except if 'stages' is not ``None``, in which case default is 'pickle').
 
-        Else, explore the **legacyipe** or **Obiwan** (default 'source') file structure to fill in the other command-line arguments;
+        Else, explore the **legacyipe** or **legacysim** (default 'source') file structure to fill in the other command-line arguments;
         and return new instance.
 
         Parameters
@@ -1500,7 +1500,7 @@ class RunCatalog(BaseCatalog):
             Single brick name or list of brick names.
 
         kwargs_files : dict, list, default=None
-            Single or list of :class:`~obiwan.kenobi.get_randoms_id` dictionaries.
+            Single or list of :class:`~legacysim.survey.get_randoms_id` dictionaries.
             A run (row) is created for each brick name and each of these dictionaries.
 
         stages : list, string, default=None
@@ -1535,7 +1535,7 @@ class RunCatalog(BaseCatalog):
         Parameters
         ----------
         cat : BaseCatalog
-            Catalog containing ``brickname``, :meth:`~obiwan.kenobi.get_randoms_id.keys` and ``stagesid`` columns.
+            Catalog containing ``brickname``, :meth:`~legacysim.survey.get_randoms_id.keys` and ``stagesid`` columns.
 
         list_stages : ListStages, default=None
             If ``None``, call :meth:`group_stages` on ``cat``.
@@ -1590,7 +1590,7 @@ class RunCatalog(BaseCatalog):
             Return copy?
 
         kwargs_files : dict, list, default=None
-            Single or list of :class:`~obiwan.kenobi.get_randoms_id` dictionaries.
+            Single or list of :class:`~legacysim.survey.get_randoms_id` dictionaries.
             A run (row) is created for each brick name and each of these dictionaries.
 
         Returns

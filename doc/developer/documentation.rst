@@ -10,7 +10,7 @@ Building
 
 The documentation can be built in or outside the Docker image::
 
-  cd $HOME/obiwan/doc
+  cd $HOME/legacysim/doc
   make html
 
 Changes to the ``rst`` files can be made from outside the Docker container.

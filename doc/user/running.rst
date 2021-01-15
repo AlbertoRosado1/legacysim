@@ -6,17 +6,17 @@ Running
 Executable
 ----------
 
-As in **legacypipe**, :mod:`~obiwan.runbrick` is the (main) executable.
-Type ``python obiwan/runbrick.py --help`` to print the command line arguments.
-**legacypipe** arguments are listed first, then in a separate group are **Obiwan**-specific ones.
+As in **legacypipe**, :mod:`~legacysim.runbrick` is the (main) executable.
+Type ``python legacysim/runbrick.py --help`` to print the command line arguments.
+**legacypipe** arguments are listed first, then in a separate group are **legacysim**-specific ones.
 
 .. note::
 
-  :mod:`~obiwan.runbrick` can be run from the command line or from a python script:
+  :mod:`~legacysim.runbrick` can be run from the command line or from a python script:
 
   .. code-block:: python
 
-    from obiwan import runbrick
+    from legacysim import runbrick
     runbrick.main(args)
 
   with arguments ``args``, as examplified in :root:`bin/mpi_main_runbricks.py`.
@@ -24,36 +24,36 @@ Type ``python obiwan/runbrick.py --help`` to print the command line arguments.
 Environment manager
 -------------------
 
-An environment manager is provided in :mod:`~obiwan.batch.environment_manager`.
-It sets up the environment variables as saved in the header of a **Tractor** (or **Obiwan** randoms) catalog.
+An environment manager is provided in :mod:`~legacysim.batch.environment_manager`.
+It sets up the environment variables as saved in the header of a **Tractor** (or **legacysim** randoms) catalog.
 
 .. code-block:: python
 
-  from obiwan.batch import EnvironmentManager
+  from legacysim.batch import EnvironmentManager
 
   with EnvironmentManager(...):
       # do stuff
 
 .. note::
 
-  The environment variables can be set at run time by passing to :mod:`~obiwan.runbrick` ``--env-header`` with a catalog file name to get environment variables from.
+  The environment variables can be set at run time by passing to :mod:`~legacysim.runbrick` ``--env-header`` with a catalog file name to get environment variables from.
 
 To take into account the different package (e.g. **legacypipe**) versions used for each stage of **legacypipe** runs
-(e.g. **tims**, **refs**, **srcs**, see `legacypipe runbrick <https://github.com/legacysurvey/legacypipe/blob/master/py/legacypipe/runbrick.py>`_), the ``PYTHONPATH`` must be set before running **Obiwan**.
-This ``PYTHONPATH`` as well as environment variables can be obtained (for a given brick name and stage) with :mod:`~obiwan.batch.environment_manager`.
+(e.g. **tims**, **refs**, **srcs**, see `legacypipe runbrick <https://github.com/legacysurvey/legacypipe/blob/master/py/legacypipe/runbrick.py>`_), the ``PYTHONPATH`` must be set before running **legacysim**.
+This ``PYTHONPATH`` as well as environment variables can be obtained (for a given brick name and stage) with :mod:`~legacysim.batch.environment_manager`.
 This can be performed in Python as exemplified in :root:`bin/mpi_main_runbricks.py` or in bash as shown in :root:`bin/mpi_runbricks.sh`.
 
 
 Run catalog
 -----------
 
-A class :class:`~obiwan.catalog.RunCatalog` is provided in **Obiwan**.
+A class :class:`~legacysim.catalog.RunCatalog` is provided in **legacysim**.
 It is a collection of brick names, ids related to the randoms file (fileid, rs, skipid; see :ref:`user-data-model`)
-and stages (possibly with module versions) which uniquely identify **Obiwan** runs.
+and stages (possibly with module versions) which uniquely identify **legacysim** runs.
 
 .. code-block:: python
 
-  from obiwan import RunCatalog
+  from legacysim import RunCatalog
 
   runcat = RunCatalog.from_brick_randoms_id(bricknames=['1588p560'],kwargs_file=dict(fileid=0,rowstart=0,skipid=0))
 
@@ -61,18 +61,18 @@ and stages (possibly with module versions) which uniquely identify **Obiwan** ru
         print(run.brickname,run.fileid,run.rowstart,run.skipid,run.stages)
 
 Brick may not be run with the same version of e.g. **legacypipe** for each stage,
-which can be accounted for by splitting each **Obiwan** run in stages using the same versions.
-For this purpose :mod:`~obiwan.scripts.runlist` helps produce a run list (which can be read with :meth:`~obiwan.catalog.RunCatalog.from_list`) with runs split in stages.
+which can be accounted for by splitting each **legacysim** run in stages using the same versions.
+For this purpose :mod:`~legacysim.scripts.runlist` helps produce a run list (which can be read with :meth:`~legacysim.catalog.RunCatalog.from_list`) with runs split in stages.
 
 Task manager
 ------------
 
-A task manager is provided in :mod:`~obiwan.batch.task_manager.py`.
+A task manager is provided in :mod:`~legacysim.batch.task_manager.py`.
 It runs different tasks in series or in parallel within MPI. You can use it following:
 
 .. code-block:: python
 
-  from obiwan.batch import TaskManager
+  from legacysim.batch import TaskManager
 
   with TaskManager(ntasks=...) as tm:
 
@@ -91,7 +91,7 @@ Some scripts are available in the :root:`bin` directory:
 .. note::
 
   The **legacypipe** environment variables are defined in :root:`bin/legacypipe-env.sh`.
-  and **Obiwan** settings (e.g. bricks to run) in :root:`bin/settings.py`.
+  and **legacysim** settings (e.g. bricks to run) in :root:`bin/settings.py`.
 
 .. note::
 
@@ -124,13 +124,13 @@ or with 2 MPI tasks::
 
 .. note::
 
-  By default, :root:`bin/mpi_runbricks.sh` uses your current **Obiwan** directory. To rather use the official release in the Docker image (``/src/obiwan``),
+  By default, :root:`bin/mpi_runbricks.sh` uses your current **legacysim** directory. To rather use the official release in the Docker image (``/src/legacysim``),
   uncomment ``export PYTHONPATH=...`` in :root:`bin/mpi_runbricks.sh`.
 
 .. note::
 
-  By default, :root:`bin/mpi_runbricks.sh` launches :root:`bin/mpi_main_runbricks.py` (which directly runs :mod:`~obiwan.runbrick`).
-  To use :root:`bin/mpi_script_runbricks.sh` (which calls :pyobiwan:`bin/runbrick.sh`) instead, pass the option ``-s``.
+  By default, :root:`bin/mpi_runbricks.sh` launches :root:`bin/mpi_main_runbricks.py` (which directly runs :mod:`~legacysim.runbrick`).
+  To use :root:`bin/mpi_script_runbricks.sh` (which calls :pylegacysim:`bin/runbrick.sh`) instead, pass the option ``-s``.
 
 .. note::
 

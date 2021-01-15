@@ -1,8 +1,8 @@
 """Call ./runbrick.sh."""
 
 import os
-from obiwan import RunCatalog
-from obiwan.batch import TaskManager,run_shell
+from legacysim import RunCatalog
+from legacysim.batch import TaskManager,run_shell
 import settings
 
 ntasks = int(os.getenv('SLURM_NTASKS','1'))

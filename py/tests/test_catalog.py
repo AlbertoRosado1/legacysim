@@ -5,8 +5,8 @@ import argparse
 
 import numpy as np
 
-from obiwan import setup_logging,BaseCatalog,SimCatalog,BrickCatalog,RunCatalog,get_randoms_id,find_file,utils
-from obiwan.catalog import Versions,Stages,ListStages
+from legacysim import setup_logging,BaseCatalog,SimCatalog,BrickCatalog,RunCatalog,get_randoms_id,find_file,utils
+from legacysim.catalog import Versions,Stages,ListStages
 
 
 setup_logging(logging.DEBUG)
@@ -123,7 +123,7 @@ def test_sim():
 
     cat = SimCatalog(size=100)
     cat.ra, cat.dec = utils.sample_ra_dec(size=cat.size,radecbox=[259.9,260.1,18.7,18.8],seed=20)
-    cat.fill_obiwan()
+    cat.fill_legacysim()
     assert np.all(cat.id == np.arange(len(cat)))
     assert np.all(cat.brickname == '2599p187')
     mask = cat.mask_collisions(radius_in_degree=1.)
@@ -320,10 +320,10 @@ def test_run():
             for kwargs_file in kwargs_files:
                 fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacypipe',filetype='tractor',**kwargs_file)
                 SimCatalog().writeto(fntmp)
-                fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='obiwan',filetype='randoms',**kwargs_file)
+                fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacysim',filetype='randoms',**kwargs_file)
                 SimCatalog().writeto(fntmp)
                 for stage in ['outliers','fitblobs']:
-                    fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='obiwan',filetype='pickle',stage=stage,**kwargs_file)
+                    fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacysim',filetype='pickle',stage=stage,**kwargs_file)
                     utils.mkdir(os.path.dirname(fntmp))
                     with open(fntmp,'w') as file:
                         file.write('ok')
