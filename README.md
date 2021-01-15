@@ -1,8 +1,8 @@
-[![Docs](https://readthedocs.org/projects/legacysim/badge/?version=latest)](http://legacysim.readthedocs.org/en/latest/)
+[![Documentation Status](https://readthedocs.org/projects/legacysim/badge/?version=latest)](https://legacysim.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/adematti/legacysim.svg?branch=master)](https://travis-ci.org/adematti/legacysim)
 [![Build Status](https://img.shields.io/circleci/project/github/adematti/legacysim.svg)](https://circleci.com/gh/adematti/legacysim)
 [![Coverage Status](https://coveralls.io/repos/github/adematti/legacysim/badge.svg?branch=master)](https://coveralls.io/github/adematti/legacysim?branch=master)
-[![codecov](https://codecov.io/gh/adematti/legacysim/branch/master/graph/badge.svg)](https://codecov.io/gh/adematti/legacysim)
+[![codecov](https://codecov.io/gh/adematti/legacysim/branch/master/graph/badge.svg?token=A45G2251X0)](https://codecov.io/gh/adematti/legacysim)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/f39a2f521e2a415888bdcbc34cc3918f)](https://www.codacy.com/gh/adematti/legacysim/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=adematti/legacysim&amp;utm_campaign=Badge_Grade)
 
 # legacysim
