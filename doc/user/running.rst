@@ -25,7 +25,7 @@ Environment manager
 -------------------
 
 An environment manager is provided in :mod:`~legacysim.batch.environment_manager`.
-It sets up the environment variables as saved in the header of a **Tractor** (or **legacysim** randoms) catalog.
+It sets up the environment variables as saved in the header of a **Tractor** (or **legacysim** injected sources) catalog.
 
 .. code-block:: python
 
@@ -48,14 +48,14 @@ Run catalog
 -----------
 
 A class :class:`~legacysim.catalog.RunCatalog` is provided in **legacysim**.
-It is a collection of brick names, ids related to the randoms file (fileid, rs, skipid; see :ref:`user-data-model`)
+It is a collection of brick names, simulation ids (fileid, rs, skipid; see :ref:`user-data-model`)
 and stages (possibly with module versions) which uniquely identify **legacysim** runs.
 
 .. code-block:: python
 
   from legacysim import RunCatalog
 
-  runcat = RunCatalog.from_brick_randoms_id(bricknames=['1588p560'],kwargs_file=dict(fileid=0,rowstart=0,skipid=0))
+  runcat = RunCatalog.from_brick_sim_id(bricknames=['1588p560'],kwargs_simid=dict(fileid=0,rowstart=0,skipid=0))
 
   for run in runcat:
         print(run.brickname,run.fileid,run.rowstart,run.skipid,run.stages)
@@ -63,6 +63,8 @@ and stages (possibly with module versions) which uniquely identify **legacysim**
 Brick may not be run with the same version of e.g. **legacypipe** for each stage,
 which can be accounted for by splitting each **legacysim** run in stages using the same versions.
 For this purpose :mod:`~legacysim.scripts.runlist` helps produce a run list (which can be read with :meth:`~legacysim.catalog.RunCatalog.from_list`) with runs split in stages.
+Note that stage-splitting can be performed for a specific package (pass e.g. ``--modules legacypipe`` to :mod:`~legacysim.scripts.runlist`),
+or for the full Docker image (pass ``--modules docker`` to :mod:`~legacysim.scripts.runlist`).
 
 Task manager
 ------------
@@ -130,7 +132,7 @@ or with 2 MPI tasks::
 .. note::
 
   By default, :root:`bin/mpi_runbricks.sh` launches :root:`bin/mpi_main_runbricks.py` (which directly runs :mod:`~legacysim.runbrick`).
-  To use :root:`bin/mpi_script_runbricks.sh` (which calls :pylegacysim:`bin/runbrick.sh`) instead, pass the option ``-s``.
+  To use :root:`bin/mpi_script_runbricks.sh` (which calls :root:`bin/runbrick.sh`) instead, pass the option ``-s``.
 
 .. note::
 

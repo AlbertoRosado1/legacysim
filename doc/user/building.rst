@@ -7,7 +7,7 @@ The software stack is rather complicated. **legacysim** is a wrapper around **le
 So there are two methods for installing everything, Docker and from scratch.
 
 legacysim with Docker
-------------------
+---------------------
 
 Docker is the preferred method, as **legacysim** can be run from a laptop and NERSC using the same Docker image.
 The Docker image is available on :dockerroot:`Docker Hub <>`.
@@ -49,7 +49,7 @@ In interactive mode::
   For further information on shifter, see `shifter docs`_.
 
 legacysim from scratch
--------------------
+----------------------
 
 To install **legacysim** from scratch, the simplest way is to follow instructions in the :root:`Travis file <.travis.yml>`:
 first go through ``apt`` installs, then ``install``.

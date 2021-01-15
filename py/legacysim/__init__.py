@@ -1,5 +1,5 @@
 """
-**legacysim** is a Monte Carlo method for adding fake galaxies to Legacy Survey images and re-processing the modified images with the **legacypipe**.
+**legacysim** is a Monte Carlo method for injecting sources into Legacy Survey images and re-processing the modified images with the **legacypipe**.
 
 Contains:
 - runbrick.py : **legacysim** main executable, extend :mod:`legacypipe.runbrick`.
@@ -10,11 +10,11 @@ Contains:
 - utils.py : Convenient functions to handle **legacysim** inputs/outputs.
 """
 
-from .version import __version__
+from ._version import __version__
 
-__all__ = ['LegacySurveySim','get_randoms_id','find_file','find_legacypipe_file','find_legacysim_file']
+__all__ = ['LegacySurveySim','get_sim_id','find_file','find_legacypipe_file','find_legacysim_file']
 __all__ += ['BaseCatalog','SimCatalog','BrickCatalog','RunCatalog','analysis','utils','setup_logging','batch']
 
-from .survey import LegacySurveySim,get_randoms_id,find_file,find_legacypipe_file,find_legacysim_file
-from .catalog import BaseCatalog,SimCatalog,BrickCatalog,RunCatalog
+from .survey import LegacySurveySim, get_sim_id, find_file, find_legacypipe_file, find_legacysim_file
+from .catalog import BaseCatalog, SimCatalog, BrickCatalog, RunCatalog
 from .utils import setup_logging

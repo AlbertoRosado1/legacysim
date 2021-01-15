@@ -1,5 +1,6 @@
 """Task manager that run tasks in series."""
 
+import sys
 import logging
 import subprocess
 
@@ -56,7 +57,7 @@ class BaseTaskManager(object):
         return [function(*(t if isinstance(t,tuple) else (t,))) for t in tasks]
 
 
-def TaskManager(ntasks=None,**kwargs):
+def TaskManager(ntasks=None, **kwargs):
     """
     Switch between non-MPI (ntasks=1) and MPI task managers. To be called as::
 
@@ -75,11 +76,11 @@ def TaskManager(ntasks=None,**kwargs):
     return self
 
 
-def run_shell(command):
+def run_shell(command, check=False):
     """Run a command in the shell, returning stdout and stderr combined."""
     if isinstance(command,list):
         command = ' '.join(map(str,command))
-        print(command)
-    output = subprocess.run(command, stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, shell=True, check=True).stdout
+    print(command)
+    sys.stdout.flush()
+    output = subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True,check=check).stdout
     return output.decode('utf-8')

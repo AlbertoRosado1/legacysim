@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import fitsio
 
 from .survey import find_file
-from .catalog import SimCatalog,RunCatalog
+from .catalog import SimCatalog, RunCatalog
 from . import utils
 
 
@@ -156,7 +156,7 @@ class ImageAnalysis(BaseImage):
 
     _shape_default = (3600,3600)
 
-    def __init__(self, base_dir='.', brickname=None, kwargs_file=None, source='legacysim'):
+    def __init__(self, base_dir='.', brickname=None, kwargs_simid=None, source='legacysim'):
         """
         Set **legacysim** or **legacypipe** file structure.
 
@@ -168,15 +168,15 @@ class ImageAnalysis(BaseImage):
         brickname : string, default=None
             Brick name.
 
-        kwargs_file : dict, default=None
-            Other arguments to file paths (e.g. :func:`legacysim.survey.get_randoms_id.keys`).
+        kwargs_simid : dict, default=None
+            :class:`~legacysim.survey.get_sim_id` dictionary with keys :meth:`~legacysim.survey.get_sim_id.keys`.
 
         source : string, default='legacysim'
             If 'legacysim', search for **legacysim** file names, else **legacypipe** file names.
         """
         self.base_dir = base_dir
         self.brickname = brickname
-        self.kwargs_file = kwargs_file or {}
+        self.kwargs_simid = kwargs_simid or {}
         self.source = source
 
     def read_image(self, filetype='image-jpeg', band=None):
@@ -201,14 +201,14 @@ class ImageAnalysis(BaseImage):
             assert len(band) == 3
             img = []
             for b in band:
-                fn = find_file(base_dir=self.base_dir,filetype=filetype,brickname=self.brickname,source=self.source,band=b,**self.kwargs_file)
+                fn = find_file(base_dir=self.base_dir,filetype=filetype,brickname=self.brickname,source=self.source,band=b,**self.kwargs_simid)
                 super(ImageAnalysis,self).read_image(fn=fn,fmt=fmt,xmin=0,ymin=0)
                 img.append(self.img)
             self.img = np.moveaxis(img,0,-1)
             from legacypipe.survey import get_rgb
             self.img = get_rgb(self.img,bands=band)
         else:
-            fn = find_file(self.base_dir,filetype,brickname=self.brickname,source='legacysim',band=band,**self.kwargs_file)
+            fn = find_file(self.base_dir,filetype,brickname=self.brickname,source='legacysim',band=band,**self.kwargs_simid)
             super(ImageAnalysis,self).read_image(fn=fn,fmt=fmt,xmin=0,ymin=0)
 
     def read_image_wcs(self, filetype='image', band='g', ext=1):
@@ -230,7 +230,7 @@ class ImageAnalysis(BaseImage):
         ----
         Inspired by https://github.com/legacysurvey/legacypipe/blob/master/py/legacypipe/image.py
         """
-        fn = find_file(base_dir=self.base_dir,filetype=filetype,brickname=self.brickname,source=self.source,band=band,**self.kwargs_file)
+        fn = find_file(base_dir=self.base_dir,filetype=filetype,brickname=self.brickname,source=self.source,band=band,**self.kwargs_simid)
         self.header = fitsio.read_header(fn,ext=ext)
         from astrometry.util.util import wcs_pv2sip_hdr
         stepsize = 0
@@ -238,7 +238,7 @@ class ImageAnalysis(BaseImage):
             stepsize = min(self.shape[:2]) / 10.
         self.wcs = wcs_pv2sip_hdr(self.header, stepsize=stepsize)
 
-    def read_sources(self, base_dir=None, filetype='randoms', source='legacysim'):
+    def read_sources(self, base_dir=None, filetype='injected', source='legacysim'):
         """
         Read sources in the image add :attr:`sources` to ``self``.
 
@@ -247,7 +247,7 @@ class ImageAnalysis(BaseImage):
         base_dir : string, defaut=None
             If not ``None``, supersedes :attr:`base_dir`.
 
-        filetype : string, default='randoms'
+        filetype : string, default='injected'
             File type of sources. See :func:`legacysim.survey.find_file`.
 
         source : string, default='legacysim'
@@ -256,7 +256,7 @@ class ImageAnalysis(BaseImage):
         """
         if base_dir is None: base_dir = self.base_dir
         if source is None: source = self.source
-        self.sources_fn = find_file(base_dir=base_dir,filetype=filetype,brickname=self.brickname,source=source,**self.kwargs_file)
+        self.sources_fn = find_file(base_dir=base_dir,filetype=filetype,brickname=self.brickname,source=source,**self.kwargs_simid)
         self.sources = SimCatalog(self.sources_fn)
         if hasattr(self.sources,'collided'):
             # Remove sources that were not injected
@@ -287,7 +287,7 @@ class ImageAnalysis(BaseImage):
         slices : list
             List of slice ``(slicex,slicey)``, to be passed to :meth:`set_subimage`.
         """
-        fn = find_file(base_dir=self.base_dir,filetype='tractor',brickname=self.brickname,source=self.source,**self.kwargs_file)
+        fn = find_file(base_dir=self.base_dir,filetype='tractor',brickname=self.brickname,source=self.source,**self.kwargs_simid)
         tractor = SimCatalog(fn)
         index_sources,_,distance = self.sources.match_radec(tractor,radius_in_degree=range_observed_injected_in_degree[-1],nearest=False,return_distance=True)
         matched_sources = index_sources[distance<match_in_degree]
@@ -366,7 +366,7 @@ class CatalogMerging(object):
         See below.
     """
 
-    def __init__(self, base_dir='.', runcat=None, bricknames=None, kwargs_files=None, source='legacysim', cats_dir=None, save_fn=None):
+    def __init__(self, base_dir='.', runcat=None, bricknames=None, kwargs_simids=None, source='legacysim', cats_dir=None, save_fn=None):
         """
         Set **legacysim** or **legacypipe** file structure.
 
@@ -377,13 +377,13 @@ class CatalogMerging(object):
 
         runcat : RunCatalog, defaut=None
             Run catalog used to select files from **legacysim** or **legacypipe** data structure.
-            If provided, supersedes ``bricknames`` and ``kwargs_files``.
+            If provided, supersedes ``bricknames`` and ``kwargs_simids``.
 
         bricknames : list, default=None
             List of brick names.
 
-        kwargs_files : dict, list, default=None
-            Single or list of arguments to file paths (e.g. :func:`legacysim.survey.get_randoms_id.keys`).
+        kwargs_simids : dict, list, default=None
+            Single or list of :class:`~legacysim.survey.get_sim_id` dictionaries with keys :meth:`~legacysim.survey.get_sim_id.keys`.
 
         source : string, default='legacysim'
             If 'legacysim', search for **legacysim** file names, else **legacypipe** file names.
@@ -395,10 +395,10 @@ class CatalogMerging(object):
             File name where to save ``self``.
         """
         bricknames = bricknames or []
-        kwargs_files = kwargs_files or {}
+        kwargs_simids = kwargs_simids or {}
         self.base_dir = base_dir
         if runcat is None:
-            self.runcat = RunCatalog.from_brick_randoms_id(bricknames=bricknames,kwargs_files=kwargs_files)
+            self.runcat = RunCatalog.from_brick_sim_id(bricknames=bricknames,kwargs_simids=kwargs_simids)
         else:
             self.runcat = runcat
         self.source = source
@@ -477,7 +477,7 @@ class CatalogMerging(object):
 
         for run in self.runcat:
             if filetype in ['ps','ps-events']:
-                fn = find_file(base_dir=base_dir,filetype='ps',brickname=run.brickname,source='legacysim',**run.kwargs_file)
+                fn = find_file(base_dir=base_dir,filetype='ps',brickname=run.brickname,source='legacysim',**run.kwargs_simid)
                 tmp = read_catalog(fn,ext=1)
                 if tmp is None: continue
                 tf = tmp.unixtime.max()
@@ -491,12 +491,12 @@ class CatalogMerging(object):
                 tmp.unixtf = tmp.full(tf)
                 tmp.brickname = tmp.full(run.brickname)
             else:
-                fn = find_file(base_dir=base_dir,filetype=filetype,brickname=run.brickname,source=source,**run.kwargs_file)
+                fn = find_file(base_dir=base_dir,filetype=filetype,brickname=run.brickname,source=source,**run.kwargs_simid)
                 tmp = read_catalog(fn)
                 if tmp is None: continue
-            for key,val in run.kwargs_file.items():
+            for key,val in run.kwargs_simid.items():
                 tmp.set(key,tmp.full(val))
-            if filetype == 'randoms':
+            if filetype == 'injected':
                 tmp.cut(~tmp.collided)
             if keep_columns is not None:
                 tmp.keep_columns(*keep_columns)
@@ -694,7 +694,7 @@ class CatalogMatching(CatalogMerging):
         """
         Add :attr:`input` and :attr:`output` **Tractor** catalog to ``self``.
 
-        By default, the injected sources of **legacysim** randoms only are considered for ``input``.
+        By default, only the sources injected by **legacysim** are considered for ``input``.
         These can be merged to the sources fitted by **legacypipe** by setting ``add_input_tractor``.
 
         Parameters
@@ -706,7 +706,7 @@ class CatalogMatching(CatalogMerging):
 
         """
         self.add_input_tractor = add_input_tractor
-        self.set_catalog(name='input',filetype='randoms',source='legacysim')
+        self.set_catalog(name='input',filetype='injected',source='legacysim')
         self.set_catalog(name='output',filetype='tractor',source='legacysim')
         if add_input_tractor:
             kwargs = {}
@@ -1038,9 +1038,12 @@ class ResourceEventAnalysis(CatalogMerging):
     """
 
     _sorted_events = ['start', 'stage_tims: starting', 'stage_tims: starting calibs', 'stage_tims: starting read_tims', 'stage_tims: done read_tims',
-        'stage_refs: starting', 'stage_outliers: starting', 'stage_halos: starting',
+        'stage_refs: starting', 'stage_outliers: starting', 'stage_halos: starting', 'stage_image_coadds: starting',
         'stage_srcs: starting', 'stage_srcs: detection maps', 'stage_srcs: sources', 'stage_srcs: SED-matched', 'stage_fitblobs: starting',
-        'stage_coadds: starting', 'stage_coadds: model images', 'stage_coadds: coadds', 'stage_coadds: extras', 'stage_writecat: starting']
+        'stage_coadds: starting', 'stage_coadds: model images', 'stage_coadds: coadds', 'stage_coadds: extras',
+        'stage_wise_forced: starting', 'stage_wise_forced: photometry', 'stage_wise_forced: results',
+        'stage_galex_forced: starting', 'stage_galex_forced: photometry', 'stage_galex_forced: results',
+        'stage_writecat: starting', 'stage_writecat: done']
 
     def process_events(self, events=None, time='reltime', statistic='mean'):
         """

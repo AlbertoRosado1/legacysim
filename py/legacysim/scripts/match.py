@@ -13,18 +13,18 @@ import logging
 
 from matplotlib import pyplot as plt
 
-from legacysim import RunCatalog,utils,setup_logging
+from legacysim import RunCatalog, utils,setup_logging
 from legacysim.analysis import CatalogMatching
 
 
-logger = logging.getLogger('match')
+logger = logging.getLogger('legacysim.match')
 
 
 def main(args=None):
 
     parser = argparse.ArgumentParser(description='Match',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--randoms', type=str, default=None,
-                        help='File name of merged randoms catalog')
+    parser.add_argument('--injected', type=str, default=None,
+                        help='File name of merged injected sources')
     parser.add_argument('--tractor', type=str, default=None,
                         help='File name of merged Tractor catalog')
     parser.add_argument('--tractor-legacypipe', nargs='?', type=str, default=False, const=None,
@@ -47,13 +47,13 @@ def main(args=None):
     RunCatalog.get_output_parser(parser=parser)
     opt = parser.parse_args(args=utils.get_parser_args(args))
 
-    if any([getattr(opt,filetype) is None for filetype in ['randoms','tractor','tractor_legacypipe']]):
+    if any([getattr(opt,filetype) is None for filetype in ['injected','tractor','tractor_legacypipe']]):
         runcat = RunCatalog.from_output_cmdline(opt)
         match = CatalogMatching(base_dir=opt.output_dir,runcat=runcat)
     else:
         match = CatalogMatching()
 
-    for filetype in ['randoms','tractor']:
+    for filetype in ['injected','tractor']:
         cat_fn = getattr(opt,filetype)
         if cat_fn is not None:
             cat = match.read_catalog(cat_fn=cat_fn,filetype=filetype,source='legacysim')

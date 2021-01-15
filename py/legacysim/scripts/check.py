@@ -12,10 +12,10 @@ import logging
 
 from astrometry.util.file import unpickle_from_file
 
-from legacysim import SimCatalog,RunCatalog,find_file,get_randoms_id,utils,setup_logging
+from legacysim import SimCatalog, RunCatalog, find_file, get_sim_id, utils, setup_logging
 
 
-logger = logging.getLogger('check')
+logger = logging.getLogger('legacysim.check')
 
 
 def main(args=None):
@@ -29,7 +29,7 @@ def main(args=None):
                          + ' This run list can be used to instantiate RunCatalog through RunCatalog.from_list(), in order to iterate easily through the runs.')
     parser = RunCatalog.get_output_parser(parser=parser,add_stages=True,add_filetype=True,add_source=True)
     opt = parser.parse_args(args=utils.get_parser_args(args))
-    for key,default in zip(get_randoms_id.keys(),get_randoms_id.default()):
+    for key,default in zip(get_sim_id.keys(),get_sim_id.default()):
         if getattr(opt,key,None) is None: setattr(opt,key,[default])
     runinput = RunCatalog.from_input_cmdline(opt)
     RunCatalog.set_default_output_cmdline(opt)
@@ -39,10 +39,10 @@ def main(args=None):
         msg = 'File %s exists but yields OSError.'
         for irun,run in enumerate(runoutput):
             if opt.filetype == 'pickle' and opt.pickle_pat is not None:
-                fn = opt.pickle_pat % dict(brick=run.brickname,ranid=get_randoms_id(**run.kwargs_file)) % run.stages[-1]
+                fn = opt.pickle_pat % dict(brick=run.brickname,ranid=get_sim_id(**run.kwargs_simid)) % run.stages[-1]
             else:
                 fn = find_file(base_dir=opt.output_dir,filetype=opt.filetype,brickname=run.brickname,
-                                source=opt.source,stage=run.stages.keys()[-1],**run.kwargs_file)
+                                source=opt.source,stage=run.stages.keys()[-1],**run.kwargs_simid)
             try:
                 if opt.filetype == 'pickle':
                     unpickle_from_file(fn)
@@ -54,14 +54,14 @@ def main(args=None):
         runoutput = runoutput[mask]
 
     mask = runinput.isin(runoutput,ignore_stage_version=True)
-    # remove runs with empty input randoms file.
+    # remove runs without injected sources.
     if opt.source == 'legacysim':
         for irun,run in enumerate(runinput):
             if not mask[irun]:
-                fn = find_file(opt.output_dir,'randoms',brickname=run.brickname,source=opt.source,**run.kwargs_file)
+                fn = find_file(opt.output_dir,'injected',brickname=run.brickname,source=opt.source,**run.kwargs_simid)
                 try:
-                    randoms = SimCatalog(fn)
-                    if randoms.size == 0: mask[irun] = True
+                    injected = SimCatalog(fn)
+                    if injected.size == 0: mask[irun] = True
                 except OSError:
                     pass
 

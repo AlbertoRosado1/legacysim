@@ -68,7 +68,7 @@ def rbmain():
                    '--force-all', '--no-write', '--no-wise', '--no-gaia',
                    '--survey-dir', surveydir,
                    '--outdir', outdir])
-        fn = os.path.join(outdir, 'tractor', '110', '1102p240', 'file0_rs0_skip0', 'tractor-1102p240.fits')
+        fn = os.path.join(outdir, 'file0_rs0_skip0', 'tractor', '110', 'tractor-1102p240.fits')
         assert(os.path.exists(fn))
         T = fits_table(fn)
         assert(len(T) == 2)
@@ -98,7 +98,7 @@ def rbmain():
                    '--survey-dir', surveydir, '--fit-on-coadds',
                    '--outdir', outdir])
 
-        fn = os.path.join(outdir, 'tractor', '110', '1102p240', 'file0_rs0_skip0', 'tractor-1102p240.fits')
+        fn = os.path.join(outdir, 'file0_rs0_skip0', 'tractor', '110', 'tractor-1102p240.fits')
         print(fn)
         assert(os.path.exists(fn))
         T = fits_table(fn)
@@ -188,7 +188,7 @@ def rbmain():
     del os.environ['TYCHO2_KD_DIR']
     del os.environ['UNWISE_MODEL_SKY_DIR']
 
-    M = fitsio.read('out-testcase12/coadd/cus/custom-346684p12791/file0_rs0_skip0/legacysurvey-custom-346684p12791-maskbits.fits.fz')
+    M = fitsio.read('out-testcase12/file0_rs0_skip0/coadd/cus/custom-346684p12791/legacysurvey-custom-346684p12791-maskbits.fits.fz')
 
     # Count masked & unmasked bits (the cluster splits this 100x100 field)
     from collections import Counter
@@ -227,7 +227,7 @@ def rbmain():
                surveydir, '--outdir', 'out-testcase9-coadds',
                '--stage', 'image_coadds', '--blob-image'])
 
-    T = fits_table('out-testcase9/tractor/cus/custom-009122p03397/file0_rs0_skip0/tractor-custom-009122p03397.fits')
+    T = fits_table('out-testcase9/file0_rs0_skip0/tractor/cus/tractor-custom-009122p03397.fits')
     assert(len(T) == 4)
     # Gaia star becomes a DUP!
     assert(np.sum([t == 'DUP' for t in T.type]) == 1)
@@ -342,7 +342,7 @@ def rbmain():
                '--survey-dir', surveydir2,
                '--outdir', 'out-mzlsbass2'])
 
-    T = fits_table('out-mzlsbass2/tractor/177/1773p595/file0_rs0_skip0/tractor-1773p595.fits')
+    T = fits_table('out-mzlsbass2/file0_rs0_skip0/tractor/177/tractor-1773p595.fits')
     assert(np.sum(T.ref_cat == 'G2') == 3)
     assert(np.sum(T.ref_id > 0) == 3)
 
@@ -373,7 +373,7 @@ def rbmain():
     del os.environ['GAIA_CAT_DIR']
     del os.environ['GAIA_CAT_VER']
 
-    M = fitsio.read(os.path.join(outdir, 'coadd', '177', '1773p595', 'file0_rs0_skip0',
+    M = fitsio.read(os.path.join(outdir, 'file0_rs0_skip0', 'coadd', '177', '1773p595',
                                  'legacysurvey-1773p595-maskbits.fits.fz'))
     assert(np.sum((M & MASKBITS['BAILOUT'] ) > 0) >= 1000)
 
@@ -391,7 +391,7 @@ def rbmain():
     os.environ['GAIA_CAT_DIR'] = os.path.join(surveydir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
     main(args=the_args)
-    fn = os.path.join(outdir, 'tractor', '110', '1102p240', 'file0_rs0_skip0', 'tractor-1102p240.fits')
+    fn = os.path.join(outdir, 'file0_rs0_skip0', 'tractor', '110', 'tractor-1102p240.fits')
     assert(os.path.exists(fn))
     T = fits_table(fn)
     assert(len(T) == 2)
@@ -399,7 +399,7 @@ def rbmain():
     # Since there is a Tycho-2 star in the blob, forced to be PSF.
     assert(T.type[0].strip() == 'PSF')
     cmd = ('(cd %s && sha256sum -c %s)' %
-           (outdir, os.path.join('tractor', '110', '1102p240', 'file0_rs0_skip0', 'brick-1102p240.sha256sum')))
+           (outdir, os.path.join('file0_rs0_skip0', 'tractor', '110', 'brick-1102p240.sha256sum')))
     print(cmd)
     rtn = os.system(cmd)
     assert(rtn == 0)
@@ -412,7 +412,7 @@ def rbmain():
                '--force-all', '--no-write', '--no-wise',
                '--survey-dir', surveydir,
                '--outdir', outdir])
-    fn = os.path.join(outdir, 'tractor', '110', '1102p240', 'file0_rs0_skip0', 'tractor-1102p240.fits')
+    fn = os.path.join(outdir, 'file0_rs0_skip0', 'tractor', '110', 'tractor-1102p240.fits')
     assert(os.path.exists(fn))
     T = fits_table(fn)
     assert(len(T) == 2)
@@ -515,7 +515,7 @@ def rbmain():
                '--outdir', outdir])
     del os.environ['GAIA_CAT_DIR']
     del os.environ['GAIA_CAT_VER']
-    fn = os.path.join(outdir, 'tractor', '110', '1102p240', 'file0_rs0_skip0', 'tractor-1102p240.fits')
+    fn = os.path.join(outdir, 'file0_rs0_skip0', 'tractor', '110', 'tractor-1102p240.fits')
     assert(os.path.exists(fn))
     T = fits_table(fn)
     assert(len(T) == 4)
@@ -544,8 +544,7 @@ def rbmain():
     outdir = 'out-testcase4b'
     os.environ['GAIA_CAT_DIR'] = os.path.join(surveydir, 'gaia')
     # Catalog written with one entry (--blobradec)
-    fn = os.path.join(outdir, 'tractor', 'cus', 'custom-186743p25461',
-                'file0_rs0_skip0','tractor-custom-186743p25461.fits')
+    fn = os.path.join(outdir, 'file0_rs0_skip0', 'tractor', 'cus', 'tractor-custom-186743p25461.fits')
     if os.path.exists(fn):
         os.unlink(fn)
     main(args=['--radec', '186.743965', '25.461788',
@@ -650,4 +649,5 @@ def rbmain():
     #                '--outdir', 'out-testcase3-ceres'] + extra_args)
 
 if __name__ == '__main__':
+
     rbmain()

@@ -42,7 +42,7 @@ except ImportError:
     else:
         setup_keywords['long_description'] = ''
     sys.path.insert(int(sys.path[0] == ''),'./py/legacysim')
-    from version import __version__
+    from _version import __version__
     setup_keywords['version'] = __version__
 
 #

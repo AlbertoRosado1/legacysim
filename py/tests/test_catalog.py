@@ -5,8 +5,8 @@ import argparse
 
 import numpy as np
 
-from legacysim import setup_logging,BaseCatalog,SimCatalog,BrickCatalog,RunCatalog,get_randoms_id,find_file,utils
-from legacysim.catalog import Versions,Stages,ListStages
+from legacysim import setup_logging, BaseCatalog, SimCatalog, BrickCatalog, RunCatalog, get_sim_id, find_file, utils
+from legacysim.catalog import Versions, Stages, ListStages
 
 
 setup_logging(logging.DEBUG)
@@ -126,6 +126,7 @@ def test_sim():
     cat.fill_legacysim()
     assert np.all(cat.id == np.arange(len(cat)))
     assert np.all(cat.brickname == '2599p187')
+    assert 'seed' in cat.fields
     mask = cat.mask_collisions(radius_in_degree=1.)
     assert mask[1:].all()
     ind1,ind2 = cat.match_radec(cat[::-1],radius_in_degree=1e-6)
@@ -218,15 +219,15 @@ def test_stages():
 def test_run():
 
     parser = RunCatalog.get_input_parser(add_stages=False)
-    assert utils.list_parser_dest(parser) == get_randoms_id.keys() + ['brick','list']
+    assert utils.list_parser_dest(parser) == get_sim_id.keys() + ['brick','list']
     parser = argparse.ArgumentParser()
     RunCatalog.get_input_parser(parser=parser,add_stages=True)
-    assert utils.list_parser_dest(parser) == get_randoms_id.keys() + ['brick','list','stages']
+    assert utils.list_parser_dest(parser) == get_sim_id.keys() + ['brick','list','stages']
     parser = RunCatalog.get_output_parser(parser=None,add_stages=True)
-    assert utils.list_parser_dest(parser) == ['output_dir'] + get_randoms_id.keys() + ['brick','list','stages','pickle_pat']
+    assert utils.list_parser_dest(parser) == ['output_dir'] + get_sim_id.keys() + ['brick','list','stages','pickle_pat']
     parser = argparse.ArgumentParser()
     parser = RunCatalog.get_output_parser(parser,add_stages=True,add_filetype=True,add_source=True)
-    assert utils.list_parser_dest(parser) == ['output_dir'] + get_randoms_id.keys() + ['brick','list','stages','pickle_pat','filetype','source']
+    assert utils.list_parser_dest(parser) == ['output_dir'] + get_sim_id.keys() + ['brick','list','stages','pickle_pat','filetype','source']
 
     class opt:
         pass
@@ -239,10 +240,10 @@ def test_run():
     RunCatalog.set_default_output_cmdline(opt)
     for key in keys_defs:
         assert key in opt
-    opt = dict(zip(get_randoms_id.keys(),[[0,1],[0,500],[0,0]]))
-    nranid = len(list(opt.values())[0])
-    kwargs_files = RunCatalog.kwargs_files_from_cmdline(opt)
-    assert kwargs_files == [{key:opt[key][i] for key in get_randoms_id.keys()} for i in range(nranid)]
+    opt = dict(zip(get_sim_id.keys(),[[0,1],[0,500],[0,0]]))
+    nsimid = len(list(opt.values())[0])
+    kwargs_simids = RunCatalog.kwargs_simids_from_cmdline(opt)
+    assert kwargs_simids == [{key:opt[key][i] for key in get_sim_id.keys()} for i in range(nsimid)]
     bricknames = ['2599p187','2599p188','2599p189']
     with tempfile.TemporaryDirectory() as tmp_dir:
         fn = os.path.join(tmp_dir,'bricklist.txt')
@@ -256,15 +257,15 @@ def test_run():
         opt['brick'] = [bricknames[1],fn,fn2]
         runcat = RunCatalog.from_input_cmdline(opt)
         assert set(runcat.brickname) == set(bricknames)
-        assert len(runcat) == len(bricknames) * nranid
+        assert len(runcat) == len(bricknames) * nsimid
         assert np.all(runcat.stagesid == 0)
         assert len(runcat.get_list_stages()) == 1
         assert runcat.get_list_stages()[0] == Stages('writecat')
         runcat1 = runcat.copy()
-        runcat1.replace_randoms_id()
-        for key,d in zip(get_randoms_id.keys(),get_randoms_id.default()):
+        runcat1.replace_sim_id()
+        for key,d in zip(get_sim_id.keys(),get_sim_id.default()):
             assert np.all(runcat1.get(key) == d)
-        runcat2 = runcat1.replace_randoms_id(copy=True,kwargs_files=kwargs_files)
+        runcat2 = runcat1.replace_sim_id(copy=True,kwargs_simids=kwargs_simids)
         assert runcat2 == runcat
         runcat2 = runcat1.tile(2,copy=True)
         runcat2.fileid[runcat1.size:] = 100 # import to set new runcat.fileid otherwise not licit
@@ -315,19 +316,19 @@ def test_run():
         assert RunCatalog.from_output_cmdline(opt) == runcat
         assert RunCatalog.from_output_cmdline({'list':fn4}) == runcat2
         runcat.write_list(fn4)
-        template_pickle = os.path.join(tmp_dir,'pickles/runbrick-%(brick)s-%(ranid)s-%%(stage)s.pickle')
+        template_pickle = os.path.join(tmp_dir,'pickles/runbrick-%(brick)s-%(simid)s-%%(stage)s.pickle')
         for brickname in bricknames:
-            for kwargs_file in kwargs_files:
-                fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacypipe',filetype='tractor',**kwargs_file)
+            for kwargs_simid in kwargs_simids:
+                fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacypipe',filetype='tractor',**kwargs_simid)
                 SimCatalog().writeto(fntmp)
-                fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacysim',filetype='randoms',**kwargs_file)
+                fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacysim',filetype='injected',**kwargs_simid)
                 SimCatalog().writeto(fntmp)
                 for stage in ['outliers','fitblobs']:
-                    fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacysim',filetype='pickle',stage=stage,**kwargs_file)
+                    fntmp = find_file(base_dir=tmp_dir,brickname=brickname,source='legacysim',filetype='pickle',stage=stage,**kwargs_simid)
                     utils.mkdir(os.path.dirname(fntmp))
                     with open(fntmp,'w') as file:
                         file.write('ok')
-                fntmp = template_pickle % {'brick':brickname,'ranid':get_randoms_id(**kwargs_file)} % {'stage':'fitblobs'}
+                fntmp = template_pickle % {'brick':brickname,'simid':get_sim_id(**kwargs_simid)} % {'stage':'fitblobs'}
                 utils.mkdir(os.path.dirname(fntmp))
                 with open(fntmp,'w') as file:
                     file.write('ok')
@@ -335,15 +336,15 @@ def test_run():
         assert runcat2.to_ndarray().sort() == runcat.to_ndarray().sort()
         for tmpopt in [{'output_dir':tmp_dir,'source':'legacypipe'},
                         {'output_dir':tmp_dir,'brick':bricknames,'source':'legacypipe'},
-                        {'output_dir':tmp_dir,'filetype':'randoms'},
+                        {'output_dir':tmp_dir,'filetype':'injected'},
                         {'output_dir':tmp_dir,'stages':'outliers'},
                         {'output_dir':tmp_dir,'stages':'outliers fitblobs','brick':bricknames},
                         {'output_dir':tmp_dir,'stages':'fitblobs','pickle_pat':template_pickle},
                         {'output_dir':tmp_dir,'stages':'fitblobs','pickle_pat':template_pickle,'brick':bricknames}]:
             runcat2 = RunCatalog.from_output_cmdline(tmpopt)
             assert set(runcat2.brickname) == set(bricknames)
-            tmp_kwargs_files = []
+            tmp_kwargs_simids = []
             for run in runcat2:
-                if run.kwargs_file not in tmp_kwargs_files:
-                    tmp_kwargs_files.append(run.kwargs_file)
-            assert set(map(frozenset,tmp_kwargs_files)) == set(map(frozenset,kwargs_files))
+                if run.kwargs_simid not in tmp_kwargs_simids:
+                    tmp_kwargs_simids.append(run.kwargs_simid)
+            assert set(map(frozenset,tmp_kwargs_simids)) == set(map(frozenset,kwargs_simids))

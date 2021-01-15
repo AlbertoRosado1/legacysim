@@ -1,10 +1,7 @@
 #!/bin/bash
 
-#BLOB_MASK_DIR=/global/cfs/cdirs/cosmo/work/legacysurvey/dr9/south
-
-#export LEGACY_SURVEY_DIR=/global/cfs/cdirs/cosmo/work/legacysurvey/dr9m/
-export LEGACYPIPE_SURVEY_DIR=/global/cfs/cdirs/cosmo/work/legacysurvey/dr9m/
-export LEGACY_SURVEY_DIR=/global/cscratch1/sd/adematti/Obiwan/dr9/data/
+export LEGACYPIPE_SURVEY_DIR=/global/cfs/cdirs/cosmo/data/legacysurvey/dr9/
+export LEGACY_SURVEY_DIR=/global/cscratch1/sd/adematti/legacysim/dr9/data/
 export DUST_DIR=/global/cfs/cdirs/cosmo/data/dust/v0_1
 export UNWISE_COADDS_DIR=/global/cfs/cdirs/cosmo/work/wise/outputs/merge/neo6/fulldepth:/global/cfs/cdirs/cosmo/data/unwise/allwise/unwise-coadds/fulldepth
 export UNWISE_COADDS_TIMERESOLVED_DIR=/global/cfs/cdirs/cosmo/work/wise/outputs/merge/neo6

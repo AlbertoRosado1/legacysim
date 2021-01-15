@@ -10,18 +10,18 @@ For details, run::
 import argparse
 import logging
 
-from legacysim import RunCatalog,get_randoms_id,utils,setup_logging
+from legacysim import RunCatalog, get_sim_id, utils, setup_logging
 from legacysim.batch import EnvironmentManager
 
 
-logger = logging.getLogger('check')
+logger = logging.getLogger('legacysim.runlist')
 
 
 def main(args=None,force_write=False):
 
     parser = argparse.ArgumentParser(description='RunList',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     runlist_template = 'runlist.txt'
-    for key in get_randoms_id.keys():
+    for key in get_sim_id.keys():
         parser.add_argument('--%s-out' % key, nargs='*', type=int, default=None, help='Write these %ss in run list.' % key)
     parser.add_argument('--modules', nargs='*', type=str, default=[], help='Read version of these modules in file headers (if files exist).')
     parser.add_argument('--write-list', nargs='?', type=str, default=False, const=True,
@@ -43,15 +43,15 @@ def main(args=None,force_write=False):
     setup_logging('warning')
     if opt.modules:
         for irun,run in enumerate(runcat):
-            environment = EnvironmentManager(base_dir=opt.output_dir,brickname=run.brickname,source=opt.source,kwargs_file=run.kwargs_file)
+            environment = EnvironmentManager(base_dir=opt.output_dir,brickname=run.brickname,source=opt.source,kwargs_simid=run.kwargs_simid)
             istages = runcat.append_stages(environment.get_stages_versions(opt.modules))
             runcat.stagesid[irun] = istages
     setup_logging(level)
     # replace old ranids with new ones, if not None
-    kwargs_files = {key:getattr(opt,'%s_out' % key) for key in get_randoms_id.keys()}
-    if not all(val is None for val in kwargs_files.values()):
-        kwargs_files = runcat.kwargs_files_from_cmdline({key:getattr(opt,'%s_out' % key) for key in get_randoms_id.keys()})
-        runcat.replace_randoms_id(kwargs_files=kwargs_files)
+    kwargs_simids = {key:getattr(opt,'%s_out' % key) for key in get_sim_id.keys()}
+    if not all(val is None for val in kwargs_simids.values()):
+        kwargs_simids = runcat.kwargs_simids_from_cmdline({key:getattr(opt,'%s_out' % key) for key in get_sim_id.keys()})
+        runcat.replace_sim_id(kwargs_simids=kwargs_simids)
     runcat.remove_duplicates().update_stages()
 
     if opt.write_list:

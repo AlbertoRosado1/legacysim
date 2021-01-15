@@ -14,8 +14,8 @@ import logging
 import argparse
 import fitsio
 
-from legacysim import find_file,RunCatalog,utils
-from legacysim.catalog import Versions,Stages
+from legacysim import find_file, RunCatalog, utils
+from legacysim.catalog import Versions, Stages
 
 
 logger = logging.getLogger('legacysim.environment_manager')
@@ -35,18 +35,35 @@ class EnvironmentManager(object):
 
     environ : dict
         Environment variables.
+
+    Note
+    ----
+    Only **legacypipe** and **legacysim** versions are saved for every stage in catalog headers.
+    Other package versions are saved at the beginning of each run (stage 'tims'),
+    and hence may not reflect the actual version used in any stage of the run.
     """
 
-    shorts_env = {'LARGEGALAXIES_CAT':'LARGEGALAXIES_CAT','TYCHO2_KD_DIR':'TYCHO2_KD',\
+    _shorts_env = {'LARGEGALAXIES_CAT':'LARGEGALAXIES_CAT','TYCHO2_KD_DIR':'TYCHO2_KD',\
                     'GAIA_CAT_DIR':'GAIA_CAT','SKY_TEMPLATE_DIR':'SKY_TEMPLATE','GALEX_DIR':'galex'}
 
-    keys_env = {'UNWISE_COADDS_DIR':'UNWISD(?P<i>.*?)$','UNWISE_COADDS_TIMERESOLVED_DIR':'UNWISTD',\
+    _keys_env = {'UNWISE_COADDS_DIR':'UNWISD(?P<i>.*?)$','UNWISE_COADDS_TIMERESOLVED_DIR':'UNWISTD',\
                 'UNWISE_MODEL_SKY_DIR':'UNWISSKY'}
 
-    shorts_stage = {'tims':'TIMS','refs':'REFS','outliers':'OUTL','halos':'HALO','srcs':'SRCS','fitblobs':'FITB',
+    _shorts_stage = {'tims':'TIMS','refs':'REFS','outliers':'OUTL','halos':'HALO','srcs':'SRCS','fitblobs':'FITB',
                 'coadds':'COAD','wise_forced':'WISE','writecat':'WCAT'}
 
-    def __init__(self, header=None, fn=None, base_dir=None, brickname=None, source='legacypipe', filetype=None, kwargs_file=None, skip=False):
+    _docker_versions = {}
+    _docker_versions['DR9.6.2'] = {'astrometry':'0.82','tractor':'dr9.4','legacypipe':'DR9.6.2'}
+    _docker_versions['DR9.6.4'] = {'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.4'}
+    _docker_versions['DR9.6.5'] = {'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.5'}
+    _docker_versions['DR9.6.5b'] = {'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.5-4-gbb698724'}
+    _docker_versions['DR9.6.6'] = {'astrometry':'0.83','tractor':'dr9.4','legacypipe':'DR9.6.6'}
+    _docker_versions['DR9.6.7'] = {'astrometry':'0.83','tractor':'dr9.4','legacypipe':'DR9.6.7'}
+    _docker_versions['DR9.6.7b'] = {'astrometry':'0.84','tractor':'dr9.4','legacypipe':'DR9.6.7'}
+    _docker_versions['DR9.6.8'] = {'astrometry':'0.84-15-g48bdcb08','tractor':'dr9.4','legacypipe':'DR9.6.8'}
+    _docker_versions['DR9.6.9'] = {'astrometry':'0.84-15-g48bdcb08','tractor':'dr9.5','legacypipe':'DR9.6.9'}
+
+    def __init__(self, header=None, fn=None, base_dir=None, brickname=None, source='legacypipe', filetype=None, kwargs_simid=None, skip=False):
         """
         Initialize :class:`EnvironmentManager` by reading the primary header of an output catalog.
 
@@ -54,12 +71,12 @@ class EnvironmentManager(object):
         ----------
         header : FITSHDR, default=None
             FITS header to read environment from. If not ``None``,
-            supersedes ``fn``, ``base_dir``, ``brickname``, ``source``, ``filetype``, ``kwargs_file``.
+            supersedes ``fn``, ``base_dir``, ``brickname``, ``source``, ``filetype``, ``kwargs_simid``.
             ``header`` is copied into :attr:`header`.
 
         fn : string, default=None
             Name of **Tractor** file to read header from.
-            If not ``None``, supersedes ``base_dir``, ``brickname``, ``source``, ``filetype``, ``kwargs_file``.
+            If not ``None``, supersedes ``base_dir``, ``brickname``, ``source``, ``filetype``, ``kwargs_simid``.
 
         base_dir : string, default=None
             **legacysim** (if ``source == 'legacysim'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
@@ -72,10 +89,10 @@ class EnvironmentManager(object):
 
         filetype : string, default=None
             File type to read primary header from.
-            If ``None``, defaults to 'randoms' if ``source == 'legacysim'``, else 'tractor'.
+            If ``None``, defaults to 'injected' if ``source == 'legacysim'``, else 'tractor'.
 
-        kwargs_file : dict, default=None
-            Other arguments to file paths (e.g. :func:`legacysim.survey.get_randoms_id.keys`).
+        kwargs_simid : dict, default=None
+            :class:`~legacysim.survey.get_sim_id` dictionary with keys :meth:`~legacysim.survey.get_sim_id.keys`.
 
         skip : bool, default=False
             If ``True``, do not set environment.
@@ -93,11 +110,11 @@ class EnvironmentManager(object):
             if self.fn is None:
                 if filetype is None:
                     if source == 'legacysim':
-                        filetype = 'randoms'
+                        filetype = 'injected'
                     else:
                         filetype = 'tractor'
-                kwargs_file = kwargs_file or {}
-                self.fn = find_file(base_dir=base_dir,filetype=filetype,brickname=brickname,source=source,**kwargs_file)
+                kwargs_simid = kwargs_simid or {}
+                self.fn = find_file(base_dir=base_dir,filetype=filetype,brickname=brickname,source=source,**kwargs_simid)
             self.header = fitsio.read_header(self.fn)
         # hack, since DR9.6.2 had no VER_TIMS entry
         if 'VER_TIMS' not in self.header: self.header['VER_TIMS'] = self.header['LEGPIPEV']
@@ -117,7 +134,7 @@ class EnvironmentManager(object):
         """Set environment variables :attr:`environ`."""
         self.environ = {}
         msg = 'Setting environment variable %s = %s'
-        for name,keyw in self.shorts_env.items():
+        for name,keyw in self._shorts_env.items():
             value = None
             for key in self.header:
                 if key.startswith('DEPNAM') and self.header[key] == keyw:
@@ -126,7 +143,7 @@ class EnvironmentManager(object):
             if value is not None:
                 logger.info(msg,name,value)
                 self.environ[name] = value
-        for name,keyw in self.keys_env.items():
+        for name,keyw in self._keys_env.items():
             value = None
             for key in self.header:
                 if key == keyw:
@@ -145,10 +162,18 @@ class EnvironmentManager(object):
         """
         Return module version for stage.
 
+        **legacypipe** and **legacysim** runs are performed within a Docker container.
+        To return (one of) the Docker container that matches the module versions in the catalog header,
+        pass ``module == 'docker'``.
+
         Parameters
         ----------
         module : string
             Module name.
+            If 'docker', return a Docker image version by matching module versions to internal :attr:`_docker_versions`.
+            If ``stage == 'tims'`` or **legacypipe** versions are the same for every stage up to ``stage``, match all modules of :attr:`_docker_versions`;
+            else only **legacypipe** version (at the given stage) is matched to :attr:`_docker_versions`,
+            and the last Docker image version of the obtained matches is returned.
 
         stage : string, default='writecat'
             Stage name.
@@ -158,13 +183,33 @@ class EnvironmentManager(object):
         version : string
             Module version.
         """
-        if stage not in self.shorts_stage:
+        if stage not in self._shorts_stage:
             raise ValueError('Do not know stage %s. Should be on of %s' % (stage,Stages.all()))
+        if module == 'docker':
+            check_all = stage == 'tims'
+            if not check_all:
+                versions = set()
+                for s in Stages.all():
+                    versions.add(self.get_module_version('legacypipe',s))
+                    if s == stage:
+                        break
+                check_all |= len(versions) == 1
+            for docker in sorted(self._docker_versions,reverse=True):
+                versions = self._docker_versions[docker]
+                modules = versions.keys() if check_all else ['legacypipe']
+                eq = True
+                for mod in modules:
+                    if self.get_module_version(mod,stage=stage) != versions[mod]:
+                        eq = False
+                        break
+                if eq:
+                    return docker
+            raise ValueError('Could not find matching %s version for stage %s in header: %s' % (module,stage,self.header))
         key = None
         if module == 'legacypipe':
-            key = 'VER_%s' % self.shorts_stage[stage]
+            key = 'VER_%s' % self._shorts_stage[stage]
         elif module == 'legacysim':
-            key = 'LSV_%s' % self.shorts_stage[stage]
+            key = 'LSV_%s' % self._shorts_stage[stage]
         else:
             for k in self.header:
                 if k.startswith('DEPNAM') and self.header[k] == module:
@@ -235,7 +280,7 @@ def get_pythonpath(module_dir='/src/',versions=(),full=False,as_string=False):
     pythonpath : string, list of strings
         PYTHONPATH.
     """
-    suffixes_module = {'legacypipe':'py','legacysim':'py'}
+    suffixes_module = {'legacysim':'py','legacypipe':'py','unwise_psf':'py'}
     pythonpath = []
     versions = dict(versions)
     for module in versions:
@@ -270,7 +315,7 @@ def main(args=None):
 
     environ,versions = [],[]
     for run in runcat:
-        environment = EnvironmentManager(base_dir=opt.output_dir,brickname=run.brickname,source=opt.source,kwargs_file=run.kwargs_file)
+        environment = EnvironmentManager(base_dir=opt.output_dir,brickname=run.brickname,source=opt.source,kwargs_simid=run.kwargs_simid)
         for key,val in environment.environ.items():
             tmp = '%s=%s' % (key,val)
             if tmp not in environ: environ.append(tmp)

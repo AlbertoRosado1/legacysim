@@ -11,11 +11,11 @@ import os
 import argparse
 import logging
 
-from legacysim import RunCatalog,utils,setup_logging
+from legacysim import RunCatalog, utils, setup_logging
 from legacysim.analysis import CatalogMerging
 
 
-logger = logging.getLogger('merge')
+logger = logging.getLogger('legacysim.merge')
 
 
 def main(args=None):

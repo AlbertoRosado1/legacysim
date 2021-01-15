@@ -131,5 +131,5 @@ python -O legacysim/runbrick.py \
       --threads "${threads}" \
       --ps \
       --ps-t0 "$(date "+%s")" \
-      "${others[@]}"
+      $others
       >> "$logfn" 2>&1

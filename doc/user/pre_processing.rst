@@ -6,7 +6,7 @@ Pre-processing
 Random catalog
 --------------
 
-The input random catalog (provided through ``--ran-fn``) should contain the following columns:
+The catalog of sources to be injected (provided through ``--injected-fn``) should contain the following columns:
 
 * ``ra``, ``dec`` (degree)
 
@@ -17,6 +17,8 @@ The input random catalog (provided through ``--ran-fn``) should contain the foll
 * ``shape_r``, half light radius (arcsecond)
 
 * ``shape_e1``, ``shape_e2``: `ellipticities`_
+
+* ``seed``: random seed, to add noise
 
 Examples of how to produce these catalogs are given in :root:`bin/preprocess.py`.
 

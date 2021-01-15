@@ -242,7 +242,7 @@ class MPITaskManager(object):
         # crash if we only have one process or one worker
         if self.size <= self.workers:
             args = (self.size, self.workers+1, self.workers)
-            raise ValueError("only have %d ranks; need at least %d to use the desired %d workers",*args)
+            raise ValueError("only have %d ranks; need at least %d to use the desired %d workers" % args)
 
         # ranks that will do work have a nonzero color now
         self._valid_worker = color > 0

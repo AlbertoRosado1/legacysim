@@ -90,13 +90,13 @@ python -u legacysim/runbrick.py --plots --brick 2440p070 --zoom 1900 2400 450 95
     group = parser.add_argument_group(title='legacysim',description='legacysim-specific arguments')
     group.add_argument('--subset', type=int, default=0,
                         help='COSMOS subset number [0 to 4, 10 to 12], only used if --run cosmos')
-    group.add_argument('--ran-fn', default=None, help='Randoms filename; if not provided, run equivalent to legacypipe.runbrick')
-    group.add_argument('--fileid', type=int, default=0, help='Index of ran-fn')
+    group.add_argument('--injected-fn', default=None, help='File name of injected sources; if not provided, run equivalent to legacypipe.runbrick')
+    group.add_argument('--fileid', type=int, default=0, help='ID of injected sources')
     group.add_argument('--rowstart', type=int, default=0,
-                        help='Zero indexed, row of ran-fn, after it is cut to brick, to start from')
+                        help='Zero indexed, row of injected-fn, after it is cut to brick, to start from')
     group.add_argument('--nobj', type=int, default=-1,
-                        help='Number of objects to inject in the given brick; if -1, all objects in ran-fn are added')
-    group.add_argument('--skipid', type=int, default=0, help='Inject collided objects from ran-fn of previous skipid-1 run. \
+                        help='Number of sources to inject in the given brick; if -1, all sources in injected-fn are added')
+    group.add_argument('--skipid', type=int, default=0, help='Inject collided sources from injected-fn of previous skipid-1 run. \
                        In this case, no cut based on --nobj and --rowstart is applied')
     group.add_argument('--col-radius', type=float, default=5., help='Collision radius in arcseconds, used to define collided simulated objects. \
                         Ignore if negative')
@@ -105,7 +105,8 @@ python -u legacysim/runbrick.py --plots --brick 2440p070 --zoom 1900 2400 450 95
     group.add_argument('--image-eq-model', action='store_true', default=False, help='Set image ivar by model only (ignore real image ivar)?')
     group.add_argument('--sim-blobs', action='store_true', default=False,
                         help='Process only the blobs that contain injected sources')
-    group.add_argument('--seed', type=int, default=None, help='Random seed to add noise to injected sources of ran-fn')
+    group.add_argument('--seed', type=int, default=None, help='Random seed to add noise to sources of injected-fn. \
+                        Used to fill or replace `seed` column if provided.')
     parser.add_argument('--env-header', type=str, default=None, help='Catalog file name to read header from to setup environment variables. \
                         If not provided, environment is not updated.')
     parser.add_argument('--log-fn', nargs='?', type=str, default=None, const=True, help='Log to given file name instead of stdout. \
@@ -134,18 +135,18 @@ def get_runbrick_kwargs(args_runbrick, **opt):
     Returns
     -------
     survey : LegacySurveySim instance
-        Survey, without ``simcat``.
+        Survey, without ``injected``.
 
-    kwargs : dict, default={}
+    kwargs : dict
         Arguments for :func:`legacypipe.runbrick.run_brick` following::
 
             run_brick(brickname, survey, **kwargs)
 
     """
-    from legacysim.survey import get_randoms_id
-    opt['kwargs_file'] = get_randoms_id.as_dict(**opt)
+    from legacysim.survey import get_sim_id
+    opt['kwargs_simid'] = get_sim_id.as_dict(**opt)
     kwargs_survey = {key:opt[key] for key in \
-                          ['sim_stamp','add_sim_noise','image_eq_model','seed','kwargs_file',
+                          ['sim_stamp','add_sim_noise','image_eq_model','kwargs_simid',
                            'survey_dir','output_dir','cache_dir','subset']}
     from legacysim.survey import get_survey
     survey = get_survey(opt.get('run',None),**kwargs_survey)
@@ -153,7 +154,7 @@ def get_runbrick_kwargs(args_runbrick, **opt):
     if opt['pickle_pat'] is None:
         opt['pickle_pat'] = survey.find_file('pickle',brick=None,stage='%%(stage)s')
     else:
-        opt['pickle_pat'] = opt['pickle_pat'].replace('%(ranid)s',get_randoms_id(**opt['kwargs_file']))
+        opt['pickle_pat'] = opt['pickle_pat'].replace('%(simid)s',get_sim_id(**opt['kwargs_simid']))
 
     if opt['checkpoint_filename']:
         if not isinstance(opt['checkpoint_filename'],str):
@@ -169,7 +170,7 @@ def get_runbrick_kwargs(args_runbrick, **opt):
 
 def run_brick(opt, survey, **kwargs):
     """
-    Add ``simcat`` to ``survey``, run brick, and saves ``simcat``.
+    Add ``injected`` to ``survey``, run brick, and saves ``injected``.
 
     Wraps :func:`legacypipe.runbrick.run_brick`.
 
@@ -179,7 +180,7 @@ def run_brick(opt, survey, **kwargs):
         Command line options for :mod:`legacysim.runbrick`.
 
     survey : LegacySurveySim instance
-        Survey, without ``simcat``.
+        Survey, without ``injected``.
 
     kwargs : dict, default={}
         Arguments for ``legacypipe.runbrick.run_brick()`` following::
@@ -191,68 +192,68 @@ def run_brick(opt, survey, **kwargs):
     toret : dict
         Dictionary returned by :func:`legacypipe.runbrick.run_brick`.
     """
-    ran_fn = survey.find_file('randoms',brick=opt.brick,output=True)
+    injected_fn = survey.find_file('injected',brick=opt.brick,output=True)
 
-    def write_randoms(simcat,header):
-        header.add_record(dict(name='PRODTYPE',value='randoms',comment='DESI data product type'))
-        simcat.writeto(ran_fn,primheader=header)
+    def write_injected(injected,header):
+        header.add_record(dict(name='PRODTYPE',value='injected',comment='DESI data product type'))
+        injected.writeto(injected_fn,primheader=header)
 
-    if opt.forceall or 'randoms' in opt.force or not os.path.isfile(ran_fn):
+    if opt.forceall or 'injected' in opt.force or not os.path.isfile(injected_fn):
         # legacypipe-only run if opt.skipid == 0 and random filename not provided
-        if (not (opt.skipid > 0)) and (opt.ran_fn is None):
-            survey.simcat = SimCatalog()
-            survey.simcat.collided = survey.simcat.falses()
+        if (not (opt.skipid > 0)) and (opt.injected_fn is None):
+            survey.injected = SimCatalog()
+            survey.injected.collided = survey.injected.falses()
             if opt.sim_blobs:
-                survey.simcat.writeto(ran_fn)
+                survey.injected.writeto(injected_fn)
                 return NothingToDoError('Fitting blobs without input catalog: escaping.')
             toret = runbrick.run_brick(opt.brick, survey, **kwargs)
-            # save empty randoms catalog with versions in header
-            write_randoms(survey.simcat,toret['version_header'])
+            # save empty injected catalog with versions in header
+            write_injected(survey.injected,toret['version_header'])
             return toret
 
         if opt.skipid > 0:
             from legacysim import find_file
-            kwargs_file = {**survey.kwargs_file,**{'skipid':opt.skipid-1}}
-            fn = find_file(base_dir=survey.output_dir,filetype='randoms',brickname=opt.brick,source='legacysim',**kwargs_file)
-            simcat = SimCatalog(fn)
-            simcat.cut(simcat.collided)
+            kwargs_simid = {**survey.kwargs_simid,**{'skipid':opt.skipid-1}}
+            fn = find_file(base_dir=survey.output_dir,filetype='injected',brickname=opt.brick,source='legacysim',**kwargs_simid)
+            injected = SimCatalog(fn)
+            injected.cut(injected.collided)
         else:
-            simcat = SimCatalog(opt.ran_fn)
-            simcat.fill_legacysim(survey=survey)
-            simcat.cut(simcat.brickname == opt.brick)
+            injected = SimCatalog(opt.injected_fn)
+            injected.fill_legacysim(survey=survey,seed=opt.seed)
+            injected.cut(injected.brickname == opt.brick)
             if opt.nobj >= 0:
-                simcat = simcat[opt.rowstart:opt.rowstart+opt.nobj]
+                injected = injected[opt.rowstart:opt.rowstart+opt.nobj]
                 logger.info('Cutting to nobj = %d',opt.nobj)
-        logger.info('SimCatalog size = %d',len(simcat))
+        logger.info('SimCatalog size = %d',len(injected))
 
         if opt.col_radius > 0.:
-            simcat.collided = simcat.mask_collisions(radius_in_degree=opt.col_radius/3600.)
+            injected.collided = injected.mask_collisions(radius_in_degree=opt.col_radius/3600.)
         else:
             logger.info('Ignore collisions.')
-            simcat.collided = simcat.falses()
+            injected.collided = injected.falses()
     else:
-        simcat = SimCatalog(ran_fn)
+        injected = SimCatalog(injected_fn)
 
-    ncollided = simcat.collided.sum()
-    mask_simcat = ~simcat.collided
+    ncollided = injected.collided.sum()
+    mask_injected = ~injected.collided
 
     if ncollided > 0:
         logger.info('Found %d collisions! You will have to run runbrick.py with --skipid = %d.',ncollided,opt.skipid+1)
 
-    survey.simcat = simcat[mask_simcat]
+    survey.injected = injected[mask_injected]
 
     if opt.sim_blobs:
-        if not len(survey.simcat):
-            simcat.writeto(ran_fn)
+        if not len(survey.injected):
+            injected.writeto(injected_fn)
             return NothingToDoError('Fitting blobs with empty input catalog: escaping.')
         logger.info('Fitting blobs of input catalog.')
-        blobradec = np.array([survey.simcat.ra,survey.simcat.dec]).T
+        blobradec = np.array([survey.injected.ra,survey.injected.dec]).T
         kwargs.update(blobradec=blobradec)
 
     toret = runbrick.run_brick(opt.brick, survey, **kwargs)
-    simcat[mask_simcat] = survey.simcat
+    injected[mask_injected] = survey.injected
 
-    write_randoms(simcat,toret['version_header'])
+    write_injected(injected,toret['version_header'])
 
     return toret
 

@@ -11,7 +11,7 @@ from tractor.sersic import SersicGalaxy
 from legacypipe import runbrick as lprunbrick
 from legacypipe.survey import wcs_for_brick
 
-from legacysim import setup_logging,LegacySurveySim,find_file,SimCatalog,BrickCatalog,runbrick,utils
+from legacysim import setup_logging, LegacySurveySim, find_file, SimCatalog, BrickCatalog, runbrick, utils
 from legacysim.batch import EnvironmentManager
 
 
@@ -21,7 +21,7 @@ logger = logging.getLogger('legacysim.test_runbrick')
 setup_logging()
 
 
-def generate_randoms(brickname, zoom=(0,3600,0,3600), zoom_margin=5, mag_range=(19.,20.), shape_r_range=(0.,1.), size=2, seed=42):
+def generate_injected(brickname, zoom=(0,3600,0,3600), zoom_margin=5, mag_range=(19.,20.), shape_r_range=(0.,1.), size=2, seed=42):
 
     brick = BrickCatalog().get_by_name(brickname)
     wcs = wcs_for_brick(brick)
@@ -32,21 +32,21 @@ def generate_randoms(brickname, zoom=(0,3600,0,3600), zoom_margin=5, mag_range=(
     targetwcs = wcs.get_subimage(x0+zoom_margin, y0+zoom_margin, W, H)
     radecbox = np.ravel([targetwcs.pixelxy2radec(x,y) for x,y in [(1,1),(W,H)]],order='F')
     radecbox = np.concatenate([np.sort(radecbox[:2]),np.sort(radecbox[2:])])
-    randoms = SimCatalog(size=size)
+    injected = SimCatalog(size=size)
     rng = np.random.RandomState(seed=seed)
-    randoms.ra,randoms.dec = utils.sample_ra_dec(radecbox=radecbox,size=randoms.size,rng=rng)
-    randoms.bx,randoms.by = brick.get_xy_from_radec(randoms.ra,randoms.dec)
+    injected.ra,injected.dec = utils.sample_ra_dec(radecbox=radecbox,size=injected.size,rng=rng)
+    injected.bx,injected.by = brick.get_xy_from_radec(injected.ra,injected.dec)
     flux_range = utils.mag2nano(mag_range)
     for b in ['g','r','z']:
-        randoms.set('flux_%s' % b,rng.uniform(*flux_range,size=randoms.size))
-    randoms.sersic = randoms.full(4)
-    ba = rng.uniform(0.2,1.,size=randoms.size)
-    phi = rng.uniform(0,np.pi,size=randoms.size)
-    randoms.shape_e1,randoms.shape_e2 = utils.get_shape_e1_e2(ba,phi)
-    randoms.shape_r = rng.uniform(*shape_r_range,size=randoms.size)
-    randoms.brickname = randoms.full(brickname)
+        injected.set('flux_%s' % b,rng.uniform(*flux_range,size=injected.size))
+    injected.sersic = injected.full(4)
+    ba = rng.uniform(0.2,1.,size=injected.size)
+    phi = rng.uniform(0,np.pi,size=injected.size)
+    injected.shape_e1,injected.shape_e2 = utils.get_shape_e1_e2(ba,phi)
+    injected.shape_r = rng.uniform(*shape_r_range,size=injected.size)
+    injected.brickname = injected.full(brickname)
 
-    return randoms
+    return injected
 
 
 def test_eq_legacypipe():
@@ -82,14 +82,14 @@ def test_eq_legacypipe():
     # check header
     header_legacypipe = fitsio.read_header(legacypipe_fn)
     header_legacysim = fitsio.read_header(legacysim_fn)
-    header_randoms = fitsio.read_header(find_file(base_dir=output_dir,filetype='randoms',brickname=brickname))
-    #assert len(header_legacysim) == len(header_randoms)
-    for key in header_randoms:
+    header_injected = fitsio.read_header(find_file(base_dir=output_dir,filetype='injected',brickname=brickname))
+    #assert len(header_legacysim) == len(header_injected)
+    for key in header_injected:
         if key != 'PRODTYPE':
-            assert header_legacysim[key] == header_randoms[key]
+            assert header_legacysim[key] == header_injected[key]
     assert 'LEGSIMV' in header_legacysim
     assert 'galsim' in [header_legacysim[key] for key in header_legacysim]
-    stages = [val for key,val in EnvironmentManager.shorts_stage.items() if key != 'wise_forced']
+    stages = [val for key,val in EnvironmentManager._shorts_stage.items() if key != 'wise_forced']
     for stage in stages:
         assert ('LSV_%s' % stage) in header_legacysim
     # legacysim: version + comment (2), galsim (2) and OBV
@@ -102,31 +102,31 @@ def test_simblobs():
     output_dir = 'out-testcase3-legacysim'
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
-    randoms_fn = os.path.join(output_dir,'input_randoms.fits')
+    injected_fn = os.path.join(output_dir,'input_injected.fits')
     brickname = '2447p120'
     zoom = [1020,1070,2775,2815]
-    randoms = generate_randoms(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.])
-    randoms.writeto(randoms_fn)
+    injected = generate_injected(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.])
+    injected.writeto(injected_fn)
 
     runbrick.main(args=['--brick', brickname, '--zoom', *map(str,zoom),
                         '--no-wise', '--force-all', '--no-write',
                         '--survey-dir', survey_dir,
-                        '--ran-fn', randoms_fn,
+                        '--injected-fn', injected_fn,
                         '--outdir', output_dir,
                         '--threads',1])
 
     runbrick.main(args=['--brick', brickname, '--zoom', *map(str,zoom),
                         '--no-wise', '--force-all', '--no-write',
                         '--survey-dir', survey_dir,
-                        '--ran-fn', randoms_fn,
+                        '--injected-fn', injected_fn,
                         '--outdir', output_dir,
                         '--fileid', 1,
                         '--sim-blobs',
                         '--threads', 1])
 
     tractor_simblobs = SimCatalog(find_file(base_dir=output_dir,filetype='tractor',source='legacysim',brickname=brickname,fileid=1))
-    indin = randoms.match_radec(tractor_simblobs,radius_in_degree=0.05/3600.,nearest=True)[0]
-    assert indin.size == randoms.size
+    indin = injected.match_radec(tractor_simblobs,radius_in_degree=0.05/3600.,nearest=True)[0]
+    assert indin.size == injected.size
 
     tractor_all = SimCatalog(find_file(base_dir=output_dir,filetype='tractor',source='legacysim',brickname=brickname))
     indin = tractor_all.match_radec(tractor_simblobs,radius_in_degree=0.001/3600.,nearest=True,return_distance=True)[0]
@@ -142,13 +142,14 @@ def test_case3():
     checkpoint_fn = os.path.join(output_dir, 'checkpoint.pickle')
     if os.path.exists(checkpoint_fn):
         os.unlink(checkpoint_fn)
-    randoms_fn = os.path.join(output_dir,'input_randoms.fits')
+    injected_fn = os.path.join(output_dir,'input_injected.fits')
     brickname = '2447p120'
     zoom = [1020,1070,2775,2815]
-    randoms = generate_randoms(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.])
-    randoms.writeto(randoms_fn)
+    injected = generate_injected(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.])
+    injected.writeto(injected_fn)
 
-    for extra_args in [['--plots','--plot-base',os.path.join(output_dir,'brick-%(brick)s')],
+    for extra_args in [
+                    ['--plots','--plot-base',os.path.join(output_dir,'brick-%(brick)s')],
                     ['--sim-stamp','tractor'],['--sim-stamp','galsim'],
                     ['--sim-stamp','tractor','--add-sim-noise','gaussian'],
                     ['--sim-stamp','tractor','--add-sim-noise','poisson'],
@@ -163,36 +164,36 @@ def test_case3():
         runbrick.main(args=['--brick', brickname, '--zoom', *map(str,zoom),
                             '--no-wise', '--force-all', '--no-write',
                             '--survey-dir', survey_dir,
-                            '--ran-fn', randoms_fn,
+                            '--injected-fn', injected_fn,
                             '--outdir', output_dir,
-                            '--seed', 42,
+                            '--seed', 0,
                             '--threads', 1] + extra_args)
 
         # build-up truth
         origin_ra = [244.77973,244.77828]
         origin_dec = [12.07234,12.07250]
         origin_type = [(DevGalaxy,SersicGalaxy),(PointSource,)]
-        randoms = SimCatalog(randoms_fn)
-        rowstart,nobj = 0,len(randoms)
+        injected = SimCatalog(injected_fn)
+        rowstart,nobj = 0,len(injected)
         if '--rowstart' in extra_args: rowstart = extra_args[extra_args.index('--rowstart')+1]
         if '--nobj' in extra_args: nobj = extra_args[extra_args.index('--nobj')+1]
-        randoms = randoms[rowstart:rowstart+nobj]
+        injected = injected[rowstart:rowstart+nobj]
         col_radius = 5.
         if '--col-radius' in extra_args: col_radius = extra_args[extra_args.index('--col-radius')+1]
-        collided = randoms.mask_collisions(radius_in_degree=col_radius/3600.)
-        randoms = randoms[~collided]
-        ra,dec = np.concatenate([origin_ra,randoms.ra]),np.concatenate([origin_dec,randoms.dec])
+        collided = injected.mask_collisions(radius_in_degree=col_radius/3600.)
+        injected = injected[~collided]
+        ra,dec = np.concatenate([origin_ra,injected.ra]),np.concatenate([origin_dec,injected.dec])
 
-        nsigmas = 30 # max tolerance
-        survey = LegacySurveySim(output_dir=output_dir,kwargs_file={'rowstart':rowstart})
+        nsigmas = 50 # max tolerance
+        survey = LegacySurveySim(output_dir=output_dir,kwargs_simid={'rowstart':rowstart})
         fn = survey.find_file('tractor',brick=brickname,output=True)
         logger.info('Reading %s',fn)
         tractor = SimCatalog(fn)
 
         # first match ra,dec
-        assert len(tractor) == len(origin_ra) + len(randoms), 'Found %d objects, injected %d sources' % (len(tractor),len(origin_ra) + len(randoms))
+        assert len(tractor) == len(origin_ra) + len(injected), 'Found %d objects, injected %d sources' % (len(tractor),len(origin_ra) + len(injected))
         # first match ra,dec
-        indin,indout,distance = utils.match_radec(ra,dec,tractor.ra,tractor.dec,radius_in_degree=0.05/3600.,nearest=True,return_distance=True)
+        indin,indout,distance = utils.match_radec(ra,dec,tractor.ra,tractor.dec,radius_in_degree=0.08/3600.,nearest=True,return_distance=True)
         assert len(indin) == len(tractor), 'Matched %d objects among %d sources' % (len(indin),len(tractor)) # all matches
         indout = indout[np.argsort(indin)]
         tractor_all = tractor[indout] # reorder such that len(origin_ra): are injected sources
@@ -204,7 +205,7 @@ def test_case3():
         tractor = tractor_all[len(origin_ra):]
         if tractor.size:
             for b in ['g','r','z']:
-                diff = np.abs(tractor.get('flux_%s' % b) - randoms.get('flux_%s' % b))
+                diff = np.abs(tractor.get('flux_%s' % b) - injected.get('flux_%s' % b))
                 sigma = diff*np.sqrt(tractor.get('flux_ivar_%s' % b))
                 logger.info('Max flux diff in %s band is %.4f, %.4f sigmas',b,diff.max(),sigma.max())
                 assert np.all(sigma < nsigmas)
@@ -230,13 +231,13 @@ def test_case3_shape():
     checkpoint_fn = os.path.join(output_dir, 'checkpoint.pickle')
     if os.path.exists(checkpoint_fn):
         os.unlink(checkpoint_fn)
-    randoms_fn = os.path.join(output_dir,'input_randoms.fits')
+    injected_fn = os.path.join(output_dir,'input_injected.fits')
     log_fn = os.path.join(output_dir,'log.out')
     brickname = '2447p120'
     zoom = [1020,1070,2775,2815]
-    randoms = generate_randoms(brickname,zoom=[1020,1040,2785,2815], zoom_margin=5, mag_range=[19.,20.], size=1)
-    randoms.shape_r = randoms.full(2.)
-    randoms.writeto(randoms_fn)
+    injected = generate_injected(brickname,zoom=[1020,1040,2785,2815],zoom_margin=5,mag_range=[19.,20.],size=1)
+    injected.shape_r = injected.full(2.)
+    injected.writeto(injected_fn)
 
     for extra_args in [['--plots','--plot-base',os.path.join(output_dir,'brick-%(brick)s')],
                     ['--sim-stamp','tractor'],['--sim-stamp','galsim'],
@@ -247,7 +248,7 @@ def test_case3_shape():
         runbrick.main(args=['--brick', brickname, '--zoom', *map(str,zoom),
                             '--no-wise', '--force-all', '--no-write',
                             '--survey-dir', survey_dir,
-                            '--ran-fn', randoms_fn,
+                            '--injected-fn', injected_fn,
                             '--outdir', output_dir,
                             '--seed', 42,
                             '--threads', 2,
@@ -255,18 +256,18 @@ def test_case3_shape():
 
         setup_logging(logging.INFO)
 
-        # input randoms
-        randoms = SimCatalog(randoms_fn)
+        # input injected
+        injected = SimCatalog(injected_fn)
         col_radius = 5.
         if '--col-radius' in extra_args: col_radius = extra_args[extra_args.index('--cl-radius')+1]
-        collided = randoms.mask_collisions(radius_in_degree=col_radius/3600.)
-        randoms = randoms[~collided]
+        collided = injected.mask_collisions(radius_in_degree=col_radius/3600.)
+        injected = injected[~collided]
 
         # build-up truth
         origin_ra = [244.77973,244.77828]
         origin_dec = [12.07234,12.07250]
         origin_type = [(DevGalaxy,SersicGalaxy),(PointSource,)]
-        ra,dec = np.concatenate([origin_ra,randoms.ra]),np.concatenate([origin_dec,randoms.dec])
+        ra,dec = np.concatenate([origin_ra,injected.ra]),np.concatenate([origin_dec,injected.dec])
 
         nsigmas = 80 # max tolerance
         survey = LegacySurveySim(output_dir=output_dir)
@@ -274,7 +275,7 @@ def test_case3_shape():
         logger.info('Reading %s',fn)
         tractor = SimCatalog(fn)
 
-        assert len(tractor) == len(origin_ra) + len(randoms), 'Found %d objects, injected %d sources' % (len(tractor),len(origin_ra) + len(randoms))
+        assert len(tractor) == len(origin_ra) + len(injected), 'Found %d objects, injected %d sources' % (len(tractor),len(origin_ra) + len(injected))
         # first match ra,dec
         indin,indout,distance = utils.match_radec(ra,dec,tractor.ra,tractor.dec,radius_in_degree=0.05/3600.,nearest=True,return_distance=True)
         assert len(indin) == len(tractor), 'Matched %d objects among %d sources' % (len(indin),len(tractor)) # all matches
@@ -287,13 +288,13 @@ def test_case3_shape():
         # flux tolerance
         tractor = tractor_all[len(origin_ra):]
         for b in ['g','r','z']:
-            diff = np.abs(tractor.get('flux_%s' % b) - randoms.get('flux_%s' % b))
+            diff = np.abs(tractor.get('flux_%s' % b) - injected.get('flux_%s' % b))
             sigma = diff*np.sqrt(tractor.get('flux_ivar_%s' % b))
             logger.info('Max flux diff in %s band is %.4f, %.4f sigmas',b,diff.max(),sigma.max())
             assert np.all(sigma < nsigmas)
 
         for field in ['shape_e1','shape_e2','shape_r']:
-            diff = np.abs(tractor.get(field) - randoms.get(field))
+            diff = np.abs(tractor.get(field) - injected.get(field))
             sigma = diff*np.sqrt(tractor.get('%s_ivar' % field))
             logger.info('Max %s diff is %.4f, %.4f sigmas',field,diff.max(),sigma.max())
             assert np.all(sigma < nsigmas)
@@ -317,13 +318,13 @@ def test_mzlsbass2():
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
 
-    randoms_fn = os.path.join(output_dir,'input_randoms.fits')
+    injected_fn = os.path.join(output_dir,'input_injected.fits')
     log_fn = os.path.join(output_dir,'log.out')
     brickname = '1773p595'
     zoom = [1300,1500,700,900]
-    #randoms = generate_randoms(brickname,zoom=zoom,zoom_margin=10)
-    randoms = generate_randoms(brickname,zoom=[1300,1400,700,800],zoom_margin=10)
-    randoms.writeto(randoms_fn)
+    #injected = generate_injected(brickname,zoom=zoom,zoom_margin=10)
+    injected = generate_injected(brickname,zoom=[1300,1400,700,800],zoom_margin=10)
+    injected.writeto(injected_fn)
 
     for extra_args in [['--plots','--plot-base',os.path.join(output_dir,'brick-%(brick)s')],
                     ['--sim-stamp','tractor','--add-sim-noise','gaussian'],
@@ -333,7 +334,7 @@ def test_mzlsbass2():
         runbrick.main(args=['--brick', brickname, '--zoom', *map(str,zoom),
                             '--no-wise', '--force-all', '--no-write',
                             '--survey-dir', survey_dir,
-                            '--ran-fn', randoms_fn,
+                            '--injected-fn', injected_fn,
                             '--outdir', output_dir,
                             '--sim-blobs',
                             '--seed', 42,
@@ -341,12 +342,12 @@ def test_mzlsbass2():
 
         setup_logging(logging.INFO)
 
-        # input randoms
-        randoms = SimCatalog(randoms_fn)
+        # input injected
+        injected = SimCatalog(injected_fn)
         col_radius = 5.
         if '--col-radius' in extra_args: col_radius = extra_args[extra_args.index('--cl-radius')+1]
-        collided = randoms.mask_collisions(radius_in_degree=col_radius/3600.)
-        randoms = randoms[~collided]
+        collided = injected.mask_collisions(radius_in_degree=col_radius/3600.)
+        injected = injected[~collided]
 
         nsigmas = 30 # max tolerance
         survey = LegacySurveySim(output_dir=output_dir)
@@ -355,17 +356,17 @@ def test_mzlsbass2():
         tractor = SimCatalog(fn)
 
         # first match ra,dec
-        indin,indout,distance = randoms.match_radec(tractor,radius_in_degree=0.1/3600.,nearest=True,return_distance=True)
-        assert len(indin) == len(randoms), 'Matched %d objects among %d injected sources' % (len(indin),len(randoms))
+        indin,indout,distance = injected.match_radec(tractor,radius_in_degree=0.1/3600.,nearest=True,return_distance=True)
+        assert len(indin) == len(injected), 'Matched %d objects among %d injected sources' % (len(indin),len(injected))
         indout = indout[np.argsort(indin)]
         tractor = tractor[indout] # reorder such that len(origin_ra): are injected sources
         # ra,dec tolerance
-        sigma = np.sqrt(((tractor.ra-randoms.ra)**2*tractor.ra_ivar + (tractor.dec-randoms.dec)**2*tractor.dec_ivar)/2.)
+        sigma = np.sqrt(((tractor.ra-injected.ra)**2*tractor.ra_ivar + (tractor.dec-injected.dec)**2*tractor.dec_ivar)/2.)
         logger.info('Max angular distance is %.4f arcsec, %.4f sigmas',distance.max()*3600.,sigma.max())
         assert np.all(sigma < nsigmas)
         # flux tolerance
         for b in ['g','r','z']:
-            diff = np.abs(tractor.get('flux_%s' % b) - randoms.get('flux_%s' % b))
+            diff = np.abs(tractor.get('flux_%s' % b) - injected.get('flux_%s' % b))
             sigma = diff*np.sqrt(tractor.get('flux_ivar_%s' % b))
             logger.info('Max flux diff in %s band is %.4f, %.4f sigmas',b,diff.max(),sigma.max())
             assert np.all(sigma < nsigmas)
@@ -381,11 +382,11 @@ def test_rerun():
         checkpoint_fn = os.path.join(output_dir,'checkpoint.pickle')
         if os.path.exists(checkpoint_fn):
             os.unlink(checkpoint_fn)
-    randoms_fn = os.path.join(output_dirs[0],'input_randoms.fits')
+    injected_fn = os.path.join(output_dirs[0],'input_injected.fits')
     brickname = '2447p120'
     zoom = [1020,1070,2775,2815]
-    randoms = generate_randoms(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.],size=2)
-    randoms.writeto(randoms_fn)
+    injected = generate_injected(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.],size=2)
+    injected.writeto(injected_fn)
 
     for extra_args in [['--sim-stamp','tractor','--add-sim-noise','gaussian']
                     ]:
@@ -396,7 +397,7 @@ def test_rerun():
                             '--seed', 42,
                             '--threads', 1] + extra_args
 
-        runbrick.main(args=common_args + ['--ran-fn',randoms_fn, '--force-all', '--no-write','--outdir', output_dirs[0]])
+        runbrick.main(args=common_args + ['--injected-fn',injected_fn, '--force-all', '--no-write','--outdir', output_dirs[0]])
 
         fn = find_file(base_dir=output_dirs[0],filetype='tractor',brickname=brickname,source='legacysim')
         tractor_ref = SimCatalog(fn)
@@ -410,7 +411,7 @@ def test_rerun():
 
                 args = common_args + ['--stage',stage,'--outdir',output_dirs[1]]
                 if istage == 0:
-                    args += ['--ran-fn',randoms_fn]
+                    args += ['--injected-fn',injected_fn]
                 runbrick.main(args=args)
 
             fn = find_file(base_dir=output_dirs[1],filetype='tractor',brickname=brickname,source='legacysim')
@@ -428,11 +429,11 @@ def test_skipid():
     checkpoint_fn = os.path.join(output_dir,'checkpoint.pickle')
     if os.path.exists(checkpoint_fn):
         os.unlink(checkpoint_fn)
-    randoms_fn = os.path.join(output_dir,'input_randoms.fits')
+    injected_fn = os.path.join(output_dir,'input_injected.fits')
     brickname = '2447p120'
     zoom = [1020,1070,2775,2815]
-    randoms = generate_randoms(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.],size=2)
-    randoms.writeto(randoms_fn)
+    injected = generate_injected(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.],size=2)
+    injected.writeto(injected_fn)
 
     for extra_args in [['--col-radius', 3600],
                     ['--col-radius', -1],
@@ -446,16 +447,16 @@ def test_skipid():
                             '--col-radius', 3600,
                             '--threads', 1] + extra_args
 
-        runbrick.main(args=common_args + ['--force-all', '--ran-fn', randoms_fn])
+        runbrick.main(args=common_args + ['--force-all', '--injected-fn', injected_fn])
 
-        fn = find_file(base_dir=output_dir,filetype='randoms',brickname=brickname,source='legacysim')
-        randoms_skip0 = SimCatalog(fn)
+        fn = find_file(base_dir=output_dir,filetype='injected',brickname=brickname,source='legacysim')
+        injected_skip0 = SimCatalog(fn)
 
         if '--col-radius' in extra_args and extra_args[extra_args.index('--col-radius')-1] > 3000:
-            assert (randoms_skip0.collided.sum() > 0) and (randoms_skip0.collided.sum() < randoms_skip0.size)
+            assert (injected_skip0.collided.sum() > 0) and (injected_skip0.collided.sum() < injected_skip0.size)
 
         runbrick.main(args=common_args + ['--skipid',1])
-        fn = find_file(base_dir=output_dir,filetype='randoms',brickname=brickname,source='legacysim',skipid=1)
-        randoms_skip1 = SimCatalog(fn)
+        fn = find_file(base_dir=output_dir,filetype='injected',brickname=brickname,source='legacysim',skipid=1)
+        injected_skip1 = SimCatalog(fn)
         for field in ['ra','dec']:
-            assert np.all(randoms_skip1.get(field) == randoms_skip0.get(field)[randoms_skip0.collided])
+            assert np.all(injected_skip1.get(field) == injected_skip0.get(field)[injected_skip0.collided])

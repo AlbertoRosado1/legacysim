@@ -1,12 +1,6 @@
 API
 ===
 
-legacysim.runbrick module
--------------------------
-.. automodule:: legacysim.runbrick
-  :members:
-  :show-inheritance:
-
 legacysim.survey module
 -----------------------
 .. automodule:: legacysim.survey
@@ -28,6 +22,12 @@ legacysim.catalog module
 legacysim.utils module
 ----------------------
 .. automodule:: legacysim.utils
+  :members:
+  :show-inheritance:
+
+legacysim.runbrick module
+-------------------------
+.. automodule:: legacysim.runbrick
   :members:
   :show-inheritance:
 

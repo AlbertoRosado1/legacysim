@@ -12,11 +12,11 @@ import logging
 
 from matplotlib import pyplot as plt
 
-from legacysim import RunCatalog,find_file,setup_logging,utils
+from legacysim import RunCatalog, find_file, setup_logging, utils
 from legacysim.analysis import ResourceAnalysis
 
 
-logger = logging.getLogger('resources')
+logger = logging.getLogger('legacysim.resources')
 
 
 def main(args=None):
@@ -34,14 +34,14 @@ def main(args=None):
 
     if opt.do == 'single':
         for run in runcat:
-            resource = ResourceAnalysis(base_dir=opt.output_dir,bricknames=run.brickname,source='legacysim',kwargs_files=run.kwargs_file)
+            resource = ResourceAnalysis(base_dir=opt.output_dir,bricknames=run.brickname,source='legacysim',kwargs_simids=run.kwargs_simid)
             if opt.plot_fn is None:
-                plot_fn = find_file(base_dir=opt.output_dir,filetype='ps',brickname=run.brickname,source='legacysim',**run.kwargs_file)
+                plot_fn = find_file(base_dir=opt.output_dir,filetype='ps',brickname=run.brickname,source='legacysim',**run.kwargs_simid)
                 plot_fn = plot_fn[:-len('.fits')] + '.png'
-            else: plot_fn = opt.plot_fn % {**{'outdir':opt.output_dir,'brick':run.brickname},**run.kwargs_file}
+            else: plot_fn = opt.plot_fn % {**{'outdir':opt.output_dir,'brick':run.brickname},**run.kwargs_simid}
             resource.set_catalog(name='series',filetype='ps')
             if resource.series == 0:
-                logger.info('No ps file for brick %s, %s; skipping.',run.brickname,run.kwargs_file)
+                logger.info('No ps file for brick %s, %s; skipping.',run.brickname,run.kwargs_simid)
             else:
                 resource.plot_one_series(fn=plot_fn)
 

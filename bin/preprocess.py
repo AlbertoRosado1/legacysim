@@ -44,6 +44,7 @@ def get_truth(truth_fn, south=True):
     """Build truth table."""
     truth = SimCatalog(truth_fn)
     mask = isELG_colors(south=south,gmarg=0.5,grmarg=0.5,rzmarg=0.5,**{'%sflux' % b:utils.mag2nano(truth.get(b)) for b in ['g','r','z']})
+    mask &= truth.rhalf < 5.
     logger.info('Target selection: %d/%d objects',mask.sum(),mask.size)
     truth = truth[mask]
     truth.rename('objid','id_truth')
@@ -75,13 +76,13 @@ def sample_from_truth(randoms, truth, rng=None, seed=None):
     phi = rng.uniform(0,np.pi,size=randoms.size)
     randoms.shape_e1,randoms.shape_e2 = utils.get_shape_e1_e2(ba,phi)
 
-    randoms.fill_legacysim()
+    randoms.fill_legacysim(seed=seed)
 
     return randoms
 
 
-def write_randoms(truth_fn, randoms_fn, bricknames=None, density=1e3, seed=None, gen_in_brick=True):
-    """Build Obiwan randoms from scratch and truth table."""
+def write_randoms(truth_fn, injected_fn, bricknames=None, density=1e3, seed=None, gen_in_brick=True):
+    """Build legacysim randoms from scratch and truth table."""
     bricknames = bricknames or []
     rng = np.random.RandomState(seed=seed)
     bricks = BrickCatalog()
@@ -113,13 +114,13 @@ def write_randoms(truth_fn, randoms_fn, bricknames=None, density=1e3, seed=None,
     truth = get_truth(truth_fn)
     randoms = sample_from_truth(randoms,truth,rng=rng)
 
-    randoms.writeto(randoms_fn)
+    randoms.writeto(injected_fn)
 
 
-def write_legacysurvey_randoms(input_fn, truth_fn, randoms_fn, bricknames=None, seed=None):
-    """Build Obiwan randoms from legacysurvey randoms and truth table."""
+def write_legacysurvey_randoms(randoms_fn, truth_fn, injected_fn, bricknames=None, seed=None):
+    """Build legacysim catalog of injected sources from legacysurvey randoms and truth table."""
     bricknames = bricknames or []
-    randoms = SimCatalog(input_fn)
+    randoms = SimCatalog(randoms_fn)
     logger.info('Selecting randoms in %s',bricknames)
     mask = np.in1d(randoms.brickname,bricknames)
     randoms = randoms[mask]
@@ -133,21 +134,21 @@ def write_legacysurvey_randoms(input_fn, truth_fn, randoms_fn, bricknames=None, 
         if mask.any():
             randoms.fill(sample_from_truth(randoms[mask],truth,seed=seed),index_self=mask,index_other=None)
 
-    randoms.writeto(randoms_fn)
+    randoms.writeto(injected_fn)
 
 
 if __name__ == '__main__':
 
     setup_logging()
 
-    parser = argparse.ArgumentParser(description='Obiwan preprocessing')
-    parser.add_argument('-d','--do',nargs='*',type=str,choices=['bricklist','randoms'],default=[],required=False,help='What should I do')
+    parser = argparse.ArgumentParser(description='Legacysim preprocessing')
+    parser.add_argument('-d','--do',nargs='*',type=str,choices=['bricklist','injected'],default=[],required=False,help='What should I do')
     opt = parser.parse_args()
 
     if 'bricklist' in opt.do:
         bricks = BrickCatalog(settings.survey_dir)
         bricks.write_list(settings.bricklist_fn)
 
-    if 'randoms' in opt.do:
-        #write_randoms(settings.truth_fn,settings.randoms_fn,bricknames=settings.get_bricknames(),seed=42,gen_in_brick=False)
-        write_legacysurvey_randoms(settings.randoms_input_fn,settings.truth_fn,settings.randoms_fn,bricknames=settings.get_bricknames(),seed=42)
+    if 'injected' in opt.do:
+        #write_randoms(settings.truth_fn,settings.injected_fn,bricknames=settings.get_bricknames(),seed=42,gen_in_brick=False)
+        write_legacysurvey_randoms(settings.randoms_fn,settings.truth_fn,settings.injected_fn,bricknames=settings.get_bricknames(),seed=42)

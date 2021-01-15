@@ -61,14 +61,14 @@ galsim.image._Image = _Image
 
 
 class BaseSimImage(object):
-    """Dumb class that extends :meth:`get_tractor_image` for future multiple inheritance."""
+    """Dumb class that extends :meth:`legacypipe.image.get_tractor_image` for future multiple inheritance."""
 
     def get_tractor_image(self, **kwargs):
 
         get_dq = kwargs.get('dq', True)
         kwargs['dq'] = True # dq required in the following
         if not kwargs.get('nanomaggies', True):
-            raise NotImplementedError('In Obiwan, images are assumed to be in nanomaggies.')
+            raise NotImplementedError('In legacysim, images are assumed to be in nanomaggies.')
         #print('slice',kwargs['slc'])
         tim = super(BaseSimImage,self).get_tractor_image(**kwargs)
 
@@ -78,7 +78,7 @@ class BaseSimImage(object):
         tim_dq = GSImage(tim.dq,xmin=1,ymin=1)
         if not get_dq: del tim.dq
 
-        if self.survey.simcat is None or not len(self.survey.simcat): # empty catalog
+        if self.survey.injected is None or not len(self.survey.injected): # empty catalog
             return tim
 
         # Grab the data and inverse variance images [nanomaggies!]
@@ -98,10 +98,10 @@ class BaseSimImage(object):
             objstamp = GalSimStamp(tim)
 
         any_overlap = False
-        for obj in self.survey.simcat:
+        for obj in self.survey.injected:
             t0 = Time()
-            logger.info('%s drawing object id=%d, band=%s: flux=%.2g, sersic=%.2f, shape_r=%.2f, shape_e1=%.2f, shape_e2=%.2f',
-                        objstamp.__class__.__name__,obj.id,objstamp.band,obj.get('flux_%s' % objstamp.band),obj.sersic,obj.shape_r,obj.shape_e1,obj.shape_e2)
+            logger.info('%s drawing object id=%d, band=%s, seed=%d: flux=%.2g, sersic=%.2f, shape_r=%.2f, shape_e1=%.2f, shape_e2=%.2f',
+                objstamp.__class__.__name__,obj.id,objstamp.band,obj.seed,obj.get('flux_%s' % objstamp.band),obj.sersic,obj.shape_r,obj.shape_e1,obj.shape_e2)
             stamp = objstamp.draw(obj)
             if stamp is None:
                 logger.debug('Stamp does not overlap tim for object id=%d',obj.id)
@@ -118,13 +118,14 @@ class BaseSimImage(object):
                 nano2e = self.get_nano2e(tim=tim,x=np.arange(overlap.xmin,overlap.xmax+1),y=np.arange(overlap.ymin,overlap.ymax+1))
 
                 if self.survey.add_sim_noise:
+                    rng = np.random.RandomState(seed=obj.seed)
                     stamp_pos = stamp.clip(0)
                     if self.survey.add_sim_noise == 'gaussian':
                         logger.debug('Adding Gaussian noise.')
-                        stamp += np.sqrt(stamp_pos)/np.sqrt(nano2e)*self.survey.rng.randn(*stamp.shape)
+                        stamp += np.sqrt(stamp_pos)/np.sqrt(nano2e)*rng.randn(*stamp.shape)
                     else: # poisson
                         logger.debug('Adding Poisson noise.')
-                        stamp += self.survey.rng.poisson(stamp_pos*nano2e,size=stamp.shape)/nano2e - stamp_pos
+                        stamp += rng.poisson(stamp_pos*nano2e,size=stamp.shape)/nano2e - stamp_pos
                 # Add stamp to image
                 tim_image[overlap] += stamp
                 # Compute stamp variance
@@ -388,7 +389,7 @@ class BaseSimStamp(object):
 
 class TractorSimStamp(BaseSimStamp):
     """
-    Extend :class:`BaseSimStamp` with generation of **Tractor** objects.
+    Extend :class:`BaseSimStamp` with generation of **Tractor** source stamps.
 
     Attributes
     ----------
@@ -466,7 +467,7 @@ class TractorSimStamp(BaseSimStamp):
 
 class GalSimStamp(BaseSimStamp):
     """
-    Extend :class:`BaseSimStamp` with generation of **galsim** objects.
+    Extend :class:`BaseSimStamp` with generation of **galsim** source stamps.
 
     Attributes
     ----------

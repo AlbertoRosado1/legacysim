@@ -6,9 +6,9 @@ import argparse
 import numpy as np
 
 from legacysim import setup_logging
-from legacysim.utils import (saveplot,MonkeyPatching,get_parser_args,list_parser_dest,get_parser_action_by_dest,
-                            match_id,sample_ra_dec,match_radec,mask_collisions,get_radecbox_area,
-                            get_shape_e1_e2,get_shape_ba_phi,mag2nano,nano2mag,get_extinction)
+from legacysim.utils import (saveplot, MonkeyPatching, get_parser_args, list_parser_dest, get_parser_action_by_dest,
+                            match_id, sample_ra_dec, match_radec, mask_collisions, get_radecbox_area,
+                            get_shape_e1_e2, get_shape_ba_phi, mag2nano, nano2mag, get_extinction)
 
 
 setup_logging(logging.DEBUG)
@@ -16,9 +16,11 @@ setup_logging(logging.DEBUG)
 
 def test_plots():
     with tempfile.TemporaryDirectory() as tmp_dir:
+
         @saveplot()
         def plot(self, ax,label='label'):
             ax.plot(np.linspace(0.,1.,10))
+
         fn = os.path.join(tmp_dir,'plot.png')
         plot(0,fn=fn)
         assert os.path.isfile(fn)
@@ -26,10 +28,13 @@ def test_plots():
 
 def test_monkey_patching():
     import legacysim
+
     def test():
         return True
+
     def test2():
         return 'file'
+
     with MonkeyPatching() as mp:
         mp.add(legacysim,'test',test)
         mp.add(legacysim,'find_file',test2)

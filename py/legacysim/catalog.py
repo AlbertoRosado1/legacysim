@@ -7,14 +7,14 @@ import itertools
 import logging
 import argparse
 import copy
-from collections import UserDict,UserList
+from collections import UserDict, UserList
 
 import numpy as np
 import fitsio
 from astrometry.util import fits
-from legacypipe.survey import LegacySurveyData,wcs_for_brick
+from legacypipe.survey import LegacySurveyData, wcs_for_brick
 
-from .survey import find_file,get_randoms_id
+from .survey import find_file, get_sim_id
 from . import utils
 
 
@@ -501,16 +501,17 @@ class BaseCatalog(fits.tabledata):
 
 
 class SimCatalog(BaseCatalog):
-    """Extend :class:`BaseCatalog` with convenient methods for **legacysim** randoms."""
+    """Extend :class:`BaseCatalog` with convenient methods for handling sources injected by **legacysim**."""
 
-    def fill_legacysim(self, survey=None):
+    def fill_legacysim(self, survey=None, seed=None):
         """
-        Fill ``self`` with columns required for **legacysim** (if not already in ``self``):
+        Add columns required for **legacysim** (if not already in ``self``):
 
             - ``id`` : defaults to :meth:`index`
-            - ``brickname``, (brick) ``bx``, ``by`` coordinates: based on ``survey`` and ``ra``, ``dec``.
+            - ``brickname``, (brick) ``bx``, ``by`` coordinates: based on ``survey`` and ``ra``, ``dec``
+            - ``seed``: random seed based on ``seed``.
 
-        Columns mandatory for **legacysim** are:
+        Other columns required by **legacysim** are:
 
             - ``ra``, ``dec`` : coordinates (degree)
             - ``flux_g``, ``flux_r``, ``flux_z`` : including galactic extinction (nanomaggies)
@@ -524,22 +525,29 @@ class SimCatalog(BaseCatalog):
             ``survey_dir`` or survey. Used to determine brick-related quantities (``brickname``, ``bx``, ``by``).
             If ``None``, brick-related quantities are inferred from :class:`desiutil.brick.Bricks` (see :class:`BrickCatalog`).
 
+        seed : int, default=None
+            Used to fill or replace 'seed' column if not ``None``.
+
         References
         ----------
         https://en.wikipedia.org/wiki/Sersic_profile
         https://www.legacysurvey.org/dr8/catalogs
         """
         bricks = None
-        if 'brickname' not in self:
+        if 'brickname' not in self.fields:
             bricks = BrickCatalog(survey=survey)
             self.brickname = bricks.get_by_radec(self.ra,self.dec).brickname
 
-        if 'id' not in self:
+        if 'id' not in self.fields:
             self.id = self.index()
 
-        if 'bx' not in self:
+        if 'bx' not in self.fields:
             if bricks is None: bricks = BrickCatalog(survey=survey)
             self.bx,self.by = bricks.get_xy_from_radec(self.ra,self.dec,brickname=self.brickname)
+
+        if seed is not None or 'seed' not in self.fields:
+            rng = np.random.RandomState(seed=seed)
+            self.seed = rng.randint(int(2**32 - 1),size=self.size)
 
     def mask_collisions(self, radius_in_degree=5./3600.):
         """
@@ -865,7 +873,7 @@ class Versions(UserDict):
             raise ValueError('Incorrect number of args %d, expected <= 1' % len(args))
 
     def keys(self):
-        """Return keys sorted by alphanumeric order."""
+        """Return keys sorted in alphabetical order."""
         return sorted(self.data.keys())
 
     def __iter__(self):
@@ -1050,7 +1058,7 @@ class ListStages(UserList):
 
 class RunCatalog(BaseCatalog):
     """
-    Extend ``BaseCatalog`` with convenient methods for run (defined by brick x randoms id x stages id) lists.
+    Extend ``BaseCatalog`` with convenient methods for run (defined by brick x sim id x stages id) lists.
 
     Useful to schedule jobs and navigate through the **legacysim** or **legacypipe** file structure.
 
@@ -1105,7 +1113,7 @@ class RunCatalog(BaseCatalog):
         """
         if parser is None:
             parser = argparse.ArgumentParser()
-        for key in get_randoms_id.keys():
+        for key in get_sim_id.keys():
             parser.add_argument('--%s' % key, nargs='*', type=int, default=None, help='Use these %ss.' % key)
         parser.add_argument('--brick', nargs='*', type=str, default=None, help='Use these brick names. Can be a brick list file.')
         parser.add_argument('--list', nargs='*', type=str, default=None, help='Use these run lists.')
@@ -1151,9 +1159,9 @@ class RunCatalog(BaseCatalog):
         return parser
 
     @staticmethod
-    def kwargs_files_from_cmdline(opt):
+    def kwargs_simids_from_cmdline(opt):
         """
-        Return list of :class:`legacysim.survey.get_randoms_id` dictionaries from command-line arguments.
+        Return list of :class:`legacysim.survey.get_sim_id` dictionaries from command-line arguments.
 
         Parameters
         ----------
@@ -1162,22 +1170,22 @@ class RunCatalog(BaseCatalog):
 
         Returns
         -------
-        kwargs_files : dict list
-            List of :class:`~legacysim.survey.get_randoms_id` dictionaries.
+        kwargs_simids : dict list
+            List of :class:`~legacysim.survey.get_sim_id` dictionaries with keys :meth:`~legacysim.survey.get_sim_id.keys`.
         """
         if isinstance(opt,dict):
             opt = dict(opt)
         else:
             opt = vars(opt)
-        for key,default in zip(get_randoms_id.keys(),get_randoms_id.default()):
+        for key,default in zip(get_sim_id.keys(),get_sim_id.default()):
             if opt[key] is None:
                 opt[key] = [default]
 
-        args = np.atleast_2d(np.array([opt[key] for key in get_randoms_id.keys()]).T)
-        kwargs_files = []
+        args = np.atleast_2d(np.array([opt[key] for key in get_sim_id.keys()]).T)
+        kwargs_simids = []
         for arg in args:
-            kwargs_files.append(dict(zip(get_randoms_id.keys(),arg)))
-        return kwargs_files
+            kwargs_simids.append(dict(zip(get_sim_id.keys(),arg)))
+        return kwargs_simids
 
     @classmethod
     def from_input_cmdline(cls, opt):
@@ -1186,7 +1194,7 @@ class RunCatalog(BaseCatalog):
 
         If 'list' is not ``None``, create new instance with :meth:`from_list`.
         and apply :meth:`mask_cmdline` i.e. restrict to those runs corresponding to other arguments in ``opt`` (ignore if ``None``).
-        Else ('list' is ``None``), create new instance with :meth:`from_brick_randoms_id` based on other command-line arguments.
+        Else ('list' is ``None``), create new instance with :meth:`from_brick_sim_id` based on other command-line arguments.
 
         Parameters
         ----------
@@ -1202,7 +1210,7 @@ class RunCatalog(BaseCatalog):
             opt = dict(opt)
         else:
             opt = vars(opt)
-        for key in ['list','brick'] + get_randoms_id.keys() + ['stages']:
+        for key in ['list','brick'] + get_sim_id.keys() + ['stages']:
             opt.setdefault(key,None)
 
         if opt['brick'] is not None:
@@ -1211,14 +1219,14 @@ class RunCatalog(BaseCatalog):
             self = cls.from_list(opt['list'])
             return self[self.mask_cmdline({**opt,**{'list':None}})]
 
-        kwargs_files = cls.kwargs_files_from_cmdline(opt)
+        kwargs_simids = cls.kwargs_simids_from_cmdline(opt)
 
         bricknames = opt['brick'] if opt['brick'] is not None else []
-        return cls.from_brick_randoms_id(bricknames=bricknames,kwargs_files=kwargs_files,stages=opt['stages'])
+        return cls.from_brick_sim_id(bricknames=bricknames,kwargs_simids=kwargs_simids,stages=opt['stages'])
 
     def mask_cmdline(self, opt):
         """
-        Return mask corresponding to command-line arguments in ``opt``: 'brick', :meth:`~legacysim.survey.get_randoms_id.keys`, 'stages', 'list'.
+        Return mask corresponding to command-line arguments in ``opt``: 'brick', :meth:`~legacysim.survey.get_sim_id.keys`, 'stages', 'list'.
 
         If an argument is not in opt or is ``None``, no mask is applied.
 
@@ -1235,7 +1243,7 @@ class RunCatalog(BaseCatalog):
         mask = self.trues()
         if opt.get('brick',None) is not None:
             mask &= np.isin(self.brickname,opt['brick'])
-        for key in get_randoms_id.keys():
+        for key in get_sim_id.keys():
             if opt.get(key,None) is not None:
                 mask &= np.any([self.get(key) == o for o in opt[key]],axis=0)
         if opt.get('stages',None) is not None:
@@ -1303,11 +1311,11 @@ class RunCatalog(BaseCatalog):
 
         cls.set_default_output_cmdline(opt)
 
-        for key in ['list','brick'] + get_randoms_id.keys():
+        for key in ['list','brick'] + get_sim_id.keys():
             opt.setdefault(key,None)
         if (not force_from_disk)\
             and ((opt['list'] is not None)\
-                or (opt['brick'] is not None) and all([opt[key] is not None for key in get_randoms_id.keys()])):
+                or (opt['brick'] is not None) and all([opt[key] is not None for key in get_sim_id.keys()])):
             return cls.from_input_cmdline(opt)
 
         self = cls()
@@ -1329,21 +1337,21 @@ class RunCatalog(BaseCatalog):
             return pattern
 
         if use_pickle_pat:
-            template_search = opt['pickle_pat'].replace('%(ranid)s','*').replace('%%(stage)s','*')
+            template_search = opt['pickle_pat'].replace('%(simid)s','*').replace('%%(stage)s','*')
             template_match = opt['pickle_pat'].replace('%(brick).3s','(.*?)') % dict(brick='(?P<brickname>.*?)',
-                                                                                ranid=get_randoms_id.match_template()) % dict(stage='(?P<stagesid>.*?)')
+                                                                                simid=get_sim_id.match_template()) % dict(stage='(?P<stagesid>.*?)')
             template_match = cleanup(template_match)
         else:
             template_search = find_file(base_dir=opt['output_dir'],filetype=opt['filetype'],brickname=None,
-                                        source=opt['source'],stage='*',**{key:'*' for key in get_randoms_id.keys()})
+                                        source=opt['source'],stage='*',**{key:'*' for key in get_sim_id.keys()})
             template_match = find_file(base_dir=opt['output_dir'],filetype=opt['filetype'],brickname=None,
-                                        source=opt['source'],stage='(?P<stagesid>.*?)',**get_randoms_id.kwargs_match_template())
+                                        source=opt['source'],stage='(?P<stagesid>.*?)',**get_sim_id.kwargs_match_template())
             template_match = template_match.replace('%(brick).3s','(.*?)') % dict(brick='(?P<brickname>.*?)')
             template_match = cleanup(template_match)
 
         def decode_output_fn(fullname):
             group = re.match(template_match,fullname).group
-            toret = {**get_randoms_id.as_dict(),**{'stagesid':Stages.default()}}
+            toret = {**get_sim_id.as_dict(),**{'stagesid':Stages.default()}}
             for field in self.fields:
                 try:
                     toret[field] = group(field)
@@ -1362,7 +1370,7 @@ class RunCatalog(BaseCatalog):
         for fn in fns:
             decode = decode_output_fn(fn)
             for field in self.fields:
-                if field in get_randoms_id.keys():
+                if field in get_sim_id.keys():
                     decode[field] = int(decode[field])
                 self.get(field).append(decode[field])
         self.to_np_arrays()
@@ -1379,7 +1387,7 @@ class RunCatalog(BaseCatalog):
     @property
     def fields(self):
         """Return fields."""
-        return ['brickname'] + get_randoms_id.keys() + ['stagesid']
+        return ['brickname'] + get_sim_id.keys() + ['stagesid']
 
     def get_list_stages(self):
         """Return :attr:`_list_stages`."""
@@ -1391,7 +1399,7 @@ class RunCatalog(BaseCatalog):
 
     def group_stages(self, copy=False):
         """
-        Start from catalog of (brickname x randoms id x stage), group rows with same (brickname x randoms id) together,
+        Start from catalog of (brickname x sim id x stage), group rows with same (brickname x sim id) together,
         stack their stages and add stages id in column ``stagesid``.
 
         List of stages :attr:`_list_stages` is cleared beforehand.
@@ -1404,7 +1412,7 @@ class RunCatalog(BaseCatalog):
         Returns
         -------
         runcat : RunCatalog
-            Catalog in correct format (brickname x randoms id x stages id).
+            Catalog in correct format (brickname x sim id x stages id).
         """
         runcat = self.remove_duplicates(copy=copy)
         runcat.get_list_stages().clear()
@@ -1490,17 +1498,17 @@ class RunCatalog(BaseCatalog):
         return mask
 
     @classmethod
-    def from_brick_randoms_id(cls, bricknames=None, kwargs_files=None, stages=None):
+    def from_brick_sim_id(cls, bricknames=None, kwargs_simids=None, stages=None):
         """
-        Initialize :class:`RunCatalog` from a list of bricks, randoms file ids and stages id.
+        Initialize :class:`RunCatalog` from a list of bricks, sim ids and stages id.
 
         Parameters
         ----------
         bricknames : list, string, default=None
             Single brick name or list of brick names.
 
-        kwargs_files : dict, list, default=None
-            Single or list of :class:`~legacysim.survey.get_randoms_id` dictionaries.
+        kwargs_simids : dict, list, default=None
+            Single or list of :class:`~legacysim.survey.get_sim_id` dictionaries with keys :meth:`~legacysim.survey.get_sim_id.keys`.
             A run (row) is created for each brick name and each of these dictionaries.
 
         stages : list, string, default=None
@@ -1512,16 +1520,16 @@ class RunCatalog(BaseCatalog):
             New instance.
         """
         if bricknames is None: bricknames = []
-        if kwargs_files is None: kwargs_files = {}
+        if kwargs_simids is None: kwargs_simids = {}
         if np.isscalar(bricknames): bricknames = [bricknames]
-        if isinstance(kwargs_files,dict): kwargs_files = [kwargs_files]
+        if isinstance(kwargs_simids,dict): kwargs_simids = [kwargs_simids]
         self = cls()
         stagesid = self.append_stages(stages)
         for field in self.fields: self.set(field,[])
         for brickname in bricknames:
-            for kwargs_file in kwargs_files:
-                kwargs_file = get_randoms_id.as_dict(**kwargs_file)
-                tmp = {**locals(),**kwargs_file}
+            for kwargs_simid in kwargs_simids:
+                kwargs_simid = get_sim_id.as_dict(**kwargs_simid)
+                tmp = {**locals(),**kwargs_simid}
                 for field in self.fields:
                     self.get(field).append(tmp[field])
         self.to_np_arrays()
@@ -1535,7 +1543,7 @@ class RunCatalog(BaseCatalog):
         Parameters
         ----------
         cat : BaseCatalog
-            Catalog containing ``brickname``, :meth:`~legacysim.survey.get_randoms_id.keys` and ``stagesid`` columns.
+            Catalog containing ``brickname``, :meth:`~legacysim.survey.get_sim_id.keys` and ``stagesid`` columns.
 
         list_stages : ListStages, default=None
             If ``None``, call :meth:`group_stages` on ``cat``.
@@ -1580,17 +1588,17 @@ class RunCatalog(BaseCatalog):
         other.stagesid = other_stagesid_bak
         self.remove_duplicates(copy=False)
 
-    def replace_randoms_id(self, copy=False, kwargs_files=None):
+    def replace_sim_id(self, copy=False, kwargs_simids=None):
         """
-        Replace randoms id by those in ``kwargs_files``.
+        Replace sim id by those in ``kwargs_simids``.
 
         Parameters
         ----------
         copy : bool, default=False
             Return copy?
 
-        kwargs_files : dict, list, default=None
-            Single or list of :class:`~legacysim.survey.get_randoms_id` dictionaries.
+        kwargs_simids : dict, list, default=None
+            Single or list of :class:`~legacysim.survey.get_sim_id` dictionaries with keys :meth:`~legacysim.survey.get_sim_id.keys`.
             A run (row) is created for each brick name and each of these dictionaries.
 
         Returns
@@ -1598,28 +1606,29 @@ class RunCatalog(BaseCatalog):
         runcat : RunCatalog
             New instance.
         """
-        if kwargs_files is None: kwargs_files = {}
-        if isinstance(kwargs_files,dict): kwargs_files = [kwargs_files]
-        for i,kwargs_file in enumerate(kwargs_files):
-            kwargs_files[i] = get_randoms_id.as_dict(**kwargs_file)
+        if kwargs_simids is None: kwargs_simids = {}
+        if isinstance(kwargs_simids,dict): kwargs_simids = [kwargs_simids]
+        for i,kwargs_simid in enumerate(kwargs_simids):
+            kwargs_simids[i] = get_sim_id.as_dict(**kwargs_simid)
         runcat = self.remove_duplicates(fields='brickname',copy=copy)
         bak = {}
-        for key in get_randoms_id.keys(): bak[key] = runcat.get(key).copy()
-        #runcat.tile(len(kwargs_files),copy=False)
-        #for key in get_randoms_id.keys():
-        #    runcat.set(key,np.concatenate([np.full_like(bak[key],kwargs_file[key]) for kwargs_file in kwargs_files]))
+        for key in get_sim_id.keys(): bak[key] = runcat.get(key).copy()
+        #runcat.tile(len(kwargs_simids),copy=False)
+        #for key in get_sim_id.keys():
+        #    runcat.set(key,np.concatenate([np.full_like(bak[key],kwargs_simid[key]) for kwargs_simid in kwargs_simids]))
         size = runcat.size
-        runcat.repeat(len(kwargs_files),copy=False)
-        for key in get_randoms_id.keys():
-            runcat.set(key,np.tile([kwargs_file[key] for kwargs_file in kwargs_files],size))
+        runcat.repeat(len(kwargs_simids),copy=False)
+        for key in get_sim_id.keys():
+            runcat.set(key,np.tile([kwargs_simid[key] for kwargs_simid in kwargs_simids],size))
         return runcat
 
-    def __iter__(self):
-        """Iterate through the different runs and attach ``kwargs_file`` and ``stages`` on the fly."""
-        for run in super(RunCatalog,self).__iter__():
-            run.kwargs_file = {key:run.get(key) for key in get_randoms_id.keys()}
-            run.stages = self._list_stages[run.stagesid]
-            yield run
+    def __getitem__(self, item):
+        """Attach ``kwargs_simid`` and ``stages`` on-the-fly."""
+        toret = super(RunCatalog,self).__getitem__(item)
+        if np.isscalar(item):
+            toret.kwargs_simid = {key:toret.get(key) for key in get_sim_id.keys()}
+            toret.stages = self._list_stages[toret.stagesid]
+        return toret
 
     def iter_mask(self, cat, fields=None):
         """
@@ -1679,7 +1688,7 @@ class RunCatalog(BaseCatalog):
         return runcat
 
     def check(self):
-        """Raise ``ValueError`` if there are rows with same (brickname x randoms id) but different ``stagesid``."""
+        """Raise ``ValueError`` if there are rows with same (brickname x sim id) but different ``stagesid``."""
         index = self.unique(fields=[field for field in self.fields if field != 'stagesid'],return_unique=False,return_index=True)
         if not index.size == self.size:
             raise ValueError('Same runs with different stages')
@@ -1701,7 +1710,7 @@ class RunCatalog(BaseCatalog):
             for istages,stages in enumerate(runcat._list_stages):
                 file.write('#stages%d = %s\n' % (istages,stages))
             for run in runcat:
-                file.write('%s %s stages%d\n' % (run.brickname,get_randoms_id(**run.kwargs_file),run.stagesid))
+                file.write('%s %s stages%d\n' % (run.brickname,get_sim_id(**run.kwargs_simid),run.stagesid))
 
     @classmethod
     def from_list(cls, fns):
@@ -1738,12 +1747,12 @@ class RunCatalog(BaseCatalog):
                         if istages != i:
                             raise ValueError('Stage header is incorrect: stage ID (%d) does not match stage order (%d).' % (i,istages))
                     else:
-                        brickname,ranid,stages = line.split()
+                        brickname,simid,stages = line.split()
                         tmp.get('brickname').append(brickname)
                         tmp.get('stagesid').append(int(re.match('stages(?P<s>.*?)$',stages).group('s')))
-                        ranid = get_randoms_id.match(ranid)
-                        for key in ranid:
-                            tmp.get(key).append(ranid[key])
+                        simid = get_sim_id.match(simid)
+                        for key in simid:
+                            tmp.get(key).append(simid[key])
                 tmp.to_np_arrays()
                 tmp.remove_duplicates(copy=False).update_stages()
                 try:

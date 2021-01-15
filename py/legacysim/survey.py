@@ -4,15 +4,11 @@ import os
 import re
 import logging
 
-import numpy as np
 from legacypipe.survey import LegacySurveyData
 from legacypipe.runs import DecamSurvey, NinetyPrimeMosaic
 from legacypipe.runcosmos import CosmosSurvey
-from astrometry.util.ttime import Time
-import tractor
-import galsim
 
-from .image import DecamSimImage, DecamSimImagePlusNoise, MosaicSimImage, MosaicSimImage, BokSimImage, PtfSimImage, MegaPrimeSimImage
+from .image import DecamSimImage, DecamSimImagePlusNoise, MosaicSimImage, BokSimImage, PtfSimImage, MegaPrimeSimImage
 
 logger = logging.getLogger('legacysim.survey')
 
@@ -46,13 +42,13 @@ def get_version():
     """Return :func:`get_git_version` if not empty, else :attr:`legacysim.__version__`."""
     toret = get_git_version()
     if not toret:
-        from .version import __version__
+        from ._version import __version__
         toret = __version__
     return toret
 
 
-class get_randoms_id(object):
-    """Handle identifier related to input random catalog: file id, row start, skip id."""
+class get_sim_id(object):
+    """Handle identifier related to simulation: file id, row start, skip id."""
 
     _keys = ['fileid','rowstart','skipid']
     _default = [0]*len(_keys)
@@ -86,22 +82,22 @@ class get_randoms_id(object):
 
     @classmethod
     def as_dict(cls, **kwargs):
-        """Return randoms id kwargs corresponding to kwargs."""
+        """Return sim id kwargs corresponding to kwargs."""
         return {key_: kwargs.get(key_,def_) for key_,def_ in zip(cls.keys(),cls.default())}
 
     @classmethod
     def as_list(cls, **kwargs):
-        """Return list corresponding to randoms id kwargs."""
+        """Return list corresponding to sim id kwargs."""
         toret = cls.as_dict(**kwargs)
         return [toret[key_] for key_ in cls.keys()]
 
     def __new__(cls, **kwargs):
-        """Return string corresponding to randoms id kwargs."""
+        """Return string corresponding to sim id kwargs."""
         return cls._template % tuple(cls.as_list(**kwargs))
 
     @classmethod
     def match(cls,string):
-        """Match randoms id in ``string`` and return  randoms id kwargs."""
+        """Match sim id in ``string`` and return sim id kwargs."""
         match = re.match(cls.match_template() + '$',string)
         return {key: int(match.group(key)) for key in cls.keys()}
 
@@ -113,7 +109,7 @@ def find_file(base_dir=None, filetype=None, brickname=None, source='legacysim', 
     Shortcut to :meth:`LegacySurveySim.find_file`.
 
     base_dir : string, default=None
-        **Obiwan** (if ``source == 'legacysim'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
+        **legacysim** (if ``source == 'legacysim'``) or legacypipe (if ``source == 'legacypipe'``) root file directory.
 
     filetype : string, default=None
         Type of file to find.
@@ -122,16 +118,16 @@ def find_file(base_dir=None, filetype=None, brickname=None, source='legacysim', 
         Brick name.
 
     source : string, default='legacysim'
-        If 'legacysim', return an **Obiwan** output file name, else a **legacypipe** file name.
+        If 'legacysim', return an **legacysim** output file name, else a **legacypipe** file name.
 
     kwargs : dict
-        Other arguments to file paths (e.g. :meth:`get_randoms_id.keys`).
+        Other arguments to file paths (e.g. :meth:`get_sim_id.keys`).
     """
     if source == 'legacysim':
-        survey = LegacySurveySim(survey_dir=base_dir,output_dir=base_dir,kwargs_file=get_randoms_id.as_dict(**kwargs))
+        survey = LegacySurveySim(survey_dir=base_dir,output_dir=base_dir,kwargs_simid=get_sim_id.as_dict(**kwargs))
     else:
         survey = LegacySurveyData(survey_dir=base_dir,output_dir=base_dir)
-    kwargs = {key:val for key,val in kwargs.items() if key not in get_randoms_id.keys()}
+    kwargs = {key:val for key,val in kwargs.items() if key not in get_sim_id.keys()}
     return survey.find_file(filetype,brick=brickname,output=False,**kwargs)
 
 
@@ -149,17 +145,17 @@ def find_legacypipe_file(survey_dir, filetype, brickname=None, **kwargs):
         Brick name.
 
     kwargs : dict
-        Other arguments to file paths (e.g. :meth:`get_randoms_id.keys`).
+        Other arguments to file paths (e.g. :meth:`get_sim_id.keys`).
     """
     return find_file(base_dir=survey_dir,filetype=filetype,brickname=brickname,source='legacypipe',**kwargs)
 
 
 def find_legacysim_file(output_dir, filetype, brickname=None, **kwargs):
     """
-    Return **Obiwan** output file name.
+    Return **legacysim** output file name.
 
     output_dir : string
-        **Obiwan** output directory.
+        **legacysim** output directory.
 
     filetype : string
         Type of file to find.
@@ -168,18 +164,18 @@ def find_legacysim_file(output_dir, filetype, brickname=None, **kwargs):
         Brick name.
 
     kwargs : dict
-        Other arguments to file paths (e.g. :meth:`get_randoms_id.keys`).
+        Other arguments to file paths (e.g. :meth:`get_sim_id.keys`).
     """
     return find_file(base_dir=output_dir,filetype=filetype,brickname=brickname,source='legacysim',**kwargs)
 
 
 class BaseSimSurvey(object):
     """
-    Dumb class with **Obiwan** attributes for future multiple inheritance.
+    Dumb class with **legacysim** attributes for future multiple inheritance.
 
     Attributes
     ----------
-    simcat : SimCatalog
+    injected : SimCatalog
         See below.
 
     sim_stamp : string
@@ -191,7 +187,7 @@ class BaseSimSurvey(object):
     image_eq_model : bool
         See below.
 
-    kwargs_file : dict
+    kwargs_simid : dict
         See below.
 
     rng : numpy.random.RandomState
@@ -207,32 +203,29 @@ class BaseSimSurvey(object):
         Directory containing output catalogs.
     """
 
-    def __init__(self, *args, simcat=None, sim_stamp='tractor', add_sim_noise=False,
-                 image_eq_model=False, seed=0, kwargs_file=None, **kwargs):
+    def __init__(self, *args, injected=None, sim_stamp='tractor', add_sim_noise=False,
+                 image_eq_model=False, kwargs_simid=None, **kwargs):
         """
         kwargs are to be passed on to :class:`legacypipe.survey.LegacySurveyData`-inherited classes, other arguments are specific to :class:`BaseSimSurvey`.
         Only ``survey_dir`` must be specified to obtain bricks through :meth:`get_brick_by_name`.
 
         Parameters
         ----------
-        simcat : SimCatalog, default=None
-            Simulated source catalog for a given brick (not CCD).
+        injected : SimCatalog, default=None
+            Catalog of sources to inject in a given brick (not CCD).
 
         sim_stamp : string, default='tractor'
-            Method to simulate objects, either 'tractor' (:class:`TractorSimStamp`) or 'galsim' (:class:`GalSimStamp`).
+            Method to simulate sources, either 'tractor' (:class:`TractorSimStamp`) or 'galsim' (:class:`GalSimStamp`).
 
         add_sim_noise : string, default=False
-            Add noise from the simulated source to the image. Choices: ['gaussian','poisson'].
+            Add noise related to the simulated source to the image. Choices: ['gaussian','poisson'].
 
         image_eq_model : bool, default=False
             Wherever add a simulated source, replace both image and inverse variance of the image
             with that of the simulated source only.
 
-        seed : int, default=0
-            For random number generators.
-
-        kwargs_file : dict, default=None
-            Extra arguments to file paths (e.g. :meth:`get_randoms_id.keys`).
+        kwargs_simid : dict, default=None
+            :class:`get_sim_id` dictionary with keys :meth:`get_sim_id.keys`.
 
         kwargs : dict
             Arguments for :class:`legacypipe.survey.LegacySurveyData`.
@@ -247,10 +240,9 @@ class BaseSimSurvey(object):
             'ptf': PtfSimImage,
             'megaprime': MegaPrimeSimImage,
             }
-        kwargs_file = kwargs_file or {}
-        for key in ['simcat','sim_stamp','add_sim_noise','image_eq_model','kwargs_file']:
+        kwargs_simid = kwargs_simid or {}
+        for key in ['injected','sim_stamp','add_sim_noise','image_eq_model','kwargs_simid']:
             setattr(self,key,locals()[key])
-        self.rng = np.random.RandomState(seed)
 
     def find_file(self, filetype, brick=None, output=False, stage=None, **kwargs):
         """
@@ -260,7 +252,7 @@ class BaseSimSurvey(object):
         ----------
         filetype : string
             Type of file to find, including:
-            - 'randoms': input random catalogues
+            - 'injected': injected sources
             - 'pickle': pickle files
             - 'checkpoint': checkpoint files
             - 'log' : log files
@@ -298,36 +290,31 @@ class BaseSimSurvey(object):
         if stage is None:
             stage = '%(stage)s'
 
-        if filetype == 'randoms':
-            base_dir = os.path.join(self.output_dir,'legacysim',brickpre,brickname,get_randoms_id(**self.kwargs_file))
-            return os.path.join(base_dir,'randoms-%s.fits' % brickname)
+        simid = get_sim_id(**self.kwargs_simid)
+
+        if filetype == 'injected':
+            base_dir = os.path.join(self.output_dir,simid,'sim',brickpre)
+            return os.path.join(base_dir,'injected-%s.fits' % brickname)
         if filetype == 'pickle':
-            base_dir = os.path.join(self.output_dir,'pickle',brickpre,brickname,get_randoms_id(**self.kwargs_file))
-            return os.path.join(base_dir,'pickle-%s-%s.pickle' % (brickname,stage))
+            base_dir = os.path.join(self.output_dir,simid,'pickles',brickpre)
+            return os.path.join(base_dir,'runbrick-%s-%s.pickle' % (brickname,stage))
         if filetype == 'checkpoint':
-            base_dir = os.path.join(self.output_dir,'checkpoint',brickpre,brickname,get_randoms_id(**self.kwargs_file))
+            base_dir = os.path.join(self.output_dir,simid,'checkpoints',brickpre)
             return os.path.join(base_dir,'checkpoint-%s.pickle' % brickname)
         if filetype == 'log':
-            base_dir = os.path.join(self.output_dir,'log',brickpre,brickname,get_randoms_id(**self.kwargs_file))
+            base_dir = os.path.join(self.output_dir,simid,'logs',brickpre)
             return os.path.join(base_dir,'log-%s.log' % brickname)
         if filetype == 'ps':
-            sources_fn = super(BaseSimSurvey,self).find_file('ref-sources',brick=brick,output=output,**kwargs)
-            dirname = os.path.dirname(sources_fn)
-            basename = os.path.basename(sources_fn).replace('reference','ps')
-            fn = os.path.join(dirname,basename)
-            if fn == sources_fn: # make sure not to overwrite ref sources catalogs
-                raise ValueError('ps path is the same as reference sources = %s' % sources_fn)
-        else:
-            fn = super(BaseSimSurvey,self).find_file(filetype,brick=brick,output=output,**kwargs)
+            base_dir = os.path.join(self.output_dir,simid,'metrics',brickpre)
+            return os.path.join(base_dir,'ps-%s.fits' % brickname)
+
+        fn = super(BaseSimSurvey,self).find_file(filetype,brick=brick,output=output,**kwargs)
 
         def wrap(fn):
-            basename = os.path.basename(fn)
-            dirname = os.path.dirname(fn)
-            ddirname = os.path.dirname(dirname)
-            if os.path.dirname(ddirname).endswith('/coadd'):
-                return os.path.join(ddirname,brickname,get_randoms_id(**self.kwargs_file),basename)
-            if  ddirname.endswith('/metrics') or ddirname.endswith('/tractor') or ddirname.endswith('/tractor-i'):
-                return os.path.join(dirname,brickname,get_randoms_id(**self.kwargs_file),basename)
+            relname = os.path.relpath(fn,self.output_dir if output else self.survey_dir)
+            legpipe_dir = os.path.normpath(relname).split(os.path.sep)[0]
+            if legpipe_dir in ['metrics','coadd','tractor-i','tractor']:
+                return os.path.join(self.output_dir,simid,relname)
             return fn
 
         if isinstance(fn,list):

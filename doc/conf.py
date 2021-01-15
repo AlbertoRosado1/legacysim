@@ -14,7 +14,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../py/'))
 sys.path.insert(0, os.path.abspath('../py/legacysim'))
-from version import __version__,__docker_image__
+from _version import __version__,__docker_image__
 
 # -- General configuration ------------------------------------------------
 
@@ -35,15 +35,15 @@ extensions = [
 # -- Project information -----------------------------------------------------
 
 project = 'legacysim'
-copyright = '2020, Hui Kong, Kaylan Burleigh, John Moustakas, Arnaud de Mattia'
-author = 'Hui Kong, Kaylan Burleigh, John Moustakas, Arnaud de Mattia'
+copyright = '2020, Kaylan Burleigh, Arnaud de Mattia, Hui Kong, John Moustakas'
+author = 'Kaylan Burleigh, Arnaud de Mattia, Hui Kong, John Moustakas'
 
 # The full version, including alpha/beta/rc tags
 release = __version__
 
 html_theme = 'sphinx_rtd_theme'
 
-autodoc_mock_imports = ['astrometry','tractor','legacypipe','desiutil','galsim']
+autodoc_mock_imports = ['fitsio','galsim','astrometry','tractor','legacypipe','desiutil']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -61,7 +61,7 @@ exclude_patterns = ['build', '**.ipynb_checkpoints']
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['static']
+html_static_path = []
 
 git_repo = 'https://github.com/adematti/legacysim.git'
 git_root = 'https://github.com/adematti/legacysim/blob/master/'
@@ -69,7 +69,6 @@ docker_root = 'https://hub.docker.com/r/adematti/legacysim/'
 legacysurvey_root = '/global/cfs/cdirs/cosmo/work/legacysurvey/dr9m/'
 
 extlinks = {'root': (git_root + '%s',''),
-            'pylegacysim': (git_root + 'py/legacysim/%s',''),
             'dockerroot': (docker_root + '%s',''),
             'legacypipe': ('https://github.com/legacysurvey/legacypipe/blob/master/','legacypipe')}
 

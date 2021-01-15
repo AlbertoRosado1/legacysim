@@ -5,10 +5,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from legacypipe import runbrick as lprunbrick
 
-from legacysim import setup_logging,runbrick,SimCatalog,RunCatalog,get_randoms_id,find_file,utils
+from legacysim import setup_logging, runbrick, SimCatalog, RunCatalog, get_sim_id, find_file, utils
 from legacysim.analysis import ImageAnalysis
-from legacysim.scripts import check,merge,match,resources,cutout
-from test_runbrick import generate_randoms
+from legacysim.scripts import check, merge, match, resources, cutout
+from test_runbrick import generate_injected
 
 
 setup_logging()
@@ -17,7 +17,7 @@ setup_logging()
 survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
 output_dir = 'out-testcase3-legacysim'
 legacypipe_dir = 'out-testcase3-legacypipe'
-randoms_fn = os.path.join(output_dir,'input_randoms.fits')
+injected_fn = os.path.join(output_dir,'input_injected.fits')
 brickname = '2447p120'
 zoom = [1020,1070,2775,2815]
 
@@ -33,13 +33,13 @@ def test_runbrick():
                         '--outdir', legacypipe_dir,
                         '--threads', '1'])
 
-    randoms = generate_randoms(brickname,zoom=zoom,mag_range=[19.,20.],shape_r_range=[0.,0.],size=5)
-    randoms.writeto(randoms_fn)
+    injected = generate_injected(brickname,zoom=zoom,mag_range=[19.,20.],shape_r_range=[0.,0.],size=5)
+    injected.writeto(injected_fn)
 
     runbrick.main(args=['--brick', brickname, '--zoom', *map(str,zoom),
                         '--no-wise', '--force-all',
                         '--survey-dir', survey_dir,
-                        '--ran-fn', randoms_fn,
+                        '--injected-fn', injected_fn,
                         '--outdir', output_dir,
                         '--seed', 42,
                         '--ps',
@@ -68,12 +68,12 @@ def test_check():
         all_kwargs = {**base_kwargs,**extra_kwargs}
         runcat = check.main(all_kwargs)
 
-        if (all_kwargs['brick'] in [brickname,bricklist_fn]) and (get_randoms_id.as_dict(**all_kwargs) == get_randoms_id.as_dict()):
+        if (all_kwargs['brick'] in [brickname,bricklist_fn]) and (get_sim_id.as_dict(**all_kwargs) == get_sim_id.as_dict()):
             assert runcat.size == 0
             continue
         assert runcat.size == 1
         assert np.all(runcat.brickname == all_kwargs['brick'])
-        for key,val in get_randoms_id.as_dict(**all_kwargs).items():
+        for key,val in get_sim_id.as_dict(**all_kwargs).items():
             assert np.all(runcat.get(key) == val)
         if 'write' in all_kwargs:
             fn = extra_kwargs['write']
@@ -88,7 +88,7 @@ def test_merge():
     base_kwargs = {'outdir':output_dir,'cat-dir':os.path.join(output_dir,'merged'),'fileid':0,'skipid':0,'rowstart':0}
     for extra_kwargs in [{'outdir':legacypipe_dir,'source':'legacypipe','filetype':'tractor'},
                         {'source':'legacysim','filetype':'tractor'},
-                        {'filetype':'randoms','cat-fn':os.path.join(base_kwargs['cat-dir'],'merged_randoms.fits')},
+                        {'filetype':'injected','cat-fn':os.path.join(base_kwargs['cat-dir'],'merged_injected.fits')},
                         ]:
         all_kwargs = {**base_kwargs,**extra_kwargs}
         merge.main(all_kwargs)
@@ -102,8 +102,8 @@ def test_merge():
             cat_fn = os.path.join(all_kwargs['cat-dir'],'merged_%s.fits' % filetype)
         merged = SimCatalog(cat_fn)
         origin = SimCatalog(find_file(base_dir=all_kwargs['outdir'],filetype=filetype,
-                                        source=source,brickname=brickname,**get_randoms_id.as_dict(**all_kwargs)))
-        if filetype == 'randoms':
+                                        source=source,brickname=brickname,**get_sim_id.as_dict(**all_kwargs)))
+        if filetype == 'injected':
             origin.cut(~origin.collided)
         assert merged.size == origin.size
         for field in origin.fields:
@@ -112,12 +112,13 @@ def test_merge():
 
 def test_match():
 
-    randoms = SimCatalog(find_file(base_dir=output_dir,source='legacysim',filetype='randoms',brickname=brickname))
+    injected = SimCatalog(find_file(base_dir=output_dir,source='legacysim',filetype='injected',brickname=brickname))
     output = SimCatalog(find_file(base_dir=output_dir,source='legacysim',filetype='tractor',brickname=brickname))
     base_kwargs = {'outdir':output_dir,'cat-dir':os.path.join(output_dir,'merged'),'fileid':0,'skipid':0,'rowstart':0}
     for extra_kwargs in [{},
                         {'tractor':os.path.join(output_dir,'merged','merged_tractor.fits')},
-                        {'tractor':os.path.join(output_dir,'merged','merged_tractor.fits'),'randoms':os.path.join(output_dir,'merged','merged_randoms.fits')},
+                        {'tractor':os.path.join(output_dir,'merged','merged_tractor.fits'),
+                        'injected':os.path.join(output_dir,'merged','merged_injected.fits')},
                         {'cat-fn':os.path.join(base_kwargs['cat-dir'],'test.fits')},
                         {'tractor':os.path.join(output_dir,'merged','merged_tractor.fits'),'tractor-legacypipe':legacypipe_dir},
                         {'tractor-legacypipe':os.path.join(output_dir,'merged','merged_tractor_legacypipe.fits')},
@@ -131,7 +132,7 @@ def test_match():
         base = all_kwargs.get('base','input')
         fn = all_kwargs.get('cat-fn',os.path.join(base_kwargs['cat-dir'],'matched_%s.fits' % base))
         radius_in_degree = all_kwargs.get('radius',1.5)/3600.
-        all_input = randoms.copy()
+        all_input = injected.copy()
         all_input.cut(~all_input.collided)
         tractor_legacypipe = all_kwargs.get('tractor-legacypipe',None)
         if tractor_legacypipe is not None:
@@ -203,7 +204,7 @@ def test_resources():
                 fn = find_file(base_dir=output_dir,filetype='ps',brick=brickname)
                 fn = fn[:-len('.fits')] + '.png'
         else:
-            fn = fn % {**{'outdir':all_kwargs['outdir'],'brick':brickname},**get_randoms_id.as_dict()}
+            fn = fn % {**{'outdir':all_kwargs['outdir'],'brick':brickname},**get_sim_id.as_dict()}
         assert os.path.isfile(fn)
         os.remove(fn)
 
@@ -215,7 +216,7 @@ def test_cutout():
     #image.read_image(filetype=filetypes[0],xmin=zoom[0],ymin=zoom[2])
     image.read_image(filetype=filetypes[0])
     image.read_image_wcs()
-    image.read_sources(filetype='randoms')
+    image.read_sources(filetype='injected')
     slicex,slicey = image.suggest_zooms(boxsize_in_pixels=20,range_observed_injected_in_degree=[0.,1.])[0]
     #filetypes = ['image','model']
     fig,lax = plt.subplots(ncols=len(filetypes),sharex=False,sharey=False,figsize=(4*len(filetypes),4),squeeze=False)

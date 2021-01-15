@@ -7,11 +7,11 @@
 
 # legacysim
 
-**legacysim** is a Monte Carlo method for adding fake galaxies and stars to Legacy Survey images and re-processing the modified images with [legacypipe](https://github.com/legacysurvey/legacypipe).
+**legacysim** is a Monte Carlo method for injecting (fake) galaxies and stars to Legacy Survey images and re-processing the modified images with [legacypipe](https://github.com/legacysurvey/legacypipe).
 
 ## Credits
 
-Former developers: Hui Kong, Kaylan Burleigh, John Moustakas.
+Developers: Kaylan Burleigh, Arnaud de Mattia, Hui Kong, John Moustakas.
 See the [offical acknowledgements](http://legacysurvey.org/#Acknowledgements) for the Legacy Survey.
 Applied to eBOSS ELG in [legacysim on eBOSS](https://arxiv.org/abs/2007.08992).
 

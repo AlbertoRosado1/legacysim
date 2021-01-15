@@ -9,9 +9,9 @@ import fitsio
 import legacypipe
 from legacypipe import runbrick as lprunbrick
 
-from legacysim import setup_logging,runbrick,SimCatalog,RunCatalog,find_file
-from legacysim.catalog import ListStages,Stages
-from legacysim.batch import TaskManager,EnvironmentManager,environment_manager,run_shell,get_pythonpath
+from legacysim import setup_logging, runbrick, SimCatalog, RunCatalog, find_file
+from legacysim.catalog import ListStages, Stages
+from legacysim.batch import TaskManager, EnvironmentManager, environment_manager, run_shell, get_pythonpath
 from legacysim.scripts import runlist
 
 
@@ -35,11 +35,11 @@ def test_environment_manager_runlist():
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
     # first create environment variables
     names_environ,shorts_environ = [],[]
-    for name,short in EnvironmentManager.shorts_env.items():
+    for name,short in EnvironmentManager._shorts_env.items():
         names_environ.append(name)
         shorts_environ.append(short)
-    keys_version = ['LEGPIPEV'] + ['VER_%s' % short for short in EnvironmentManager.shorts_stage.values()]
-    keys_version.remove('VER_TIMS') # not in < DR9.6.7
+    keys_version = ['LEGPIPEV'] + ['VER_%s' % short for short in EnvironmentManager._shorts_stage.values()]
+    #keys_version.remove('VER_TIMS') # not in < DR9.6.7
     keys_version.remove('VER_WISE') # not run
     assert 'GAIA_CAT_DIR' in names_environ
     assert 'GAIA_CAT' in shorts_environ
@@ -47,10 +47,10 @@ def test_environment_manager_runlist():
     def get_environ(nwise=4,rng=None):
         if rng is None: rng = np.random.RandomState()
         toret = {}
-        for iname,(name,short) in enumerate(EnvironmentManager.shorts_env.items()):
+        for iname,(name,short) in enumerate(EnvironmentManager._shorts_env.items()):
             toret[name] = '%s_%d' % (name,iname) # fake paths
         keys = []
-        for name,key in EnvironmentManager.keys_env.items():
+        for name,key in EnvironmentManager._keys_env.items():
             if name == 'UNWISE_COADDS_DIR':
                 tmp = []
                 for i in range(nwise):
@@ -140,6 +140,11 @@ def test_environment_manager_runlist():
         for key in header:
             if header[key] in shorts_environ:
                 env[header[key]] = header[key.replace('DEPNAM','DEPVER')]
+        # for DR9.6.2
+        if 'VER_TIMS' not in header:
+            header['VER_TIMS'] = header['LEGPIPEV']
+        if 'LSV_TIMS' not in header and 'LEGSIMV' in header:
+            header['LSV_TIMS'] = header['LEGSIMV']
         for key in keys_version + keys_environ:
             env[key] = header[key]
         return env
@@ -165,11 +170,8 @@ def test_environment_manager_runlist():
         assert len(env_legacypipe) == len(shorts_environ) + len(keys_version) + len(keys_environ)
         for stage,versions in config['stages']:
             for module,version in versions:
-                if module == 'loegacypipe':
-                    if version == 'DR9.6.2' and stage == 'tims':
-                        assert env_legacypipe['LEGPIPEV'] == version
-                    else:
-                        assert env_legacypipe['VER_%s' % EnvironmentManager.shorts_stage[stage]] == version
+                if module == 'legacypipe':
+                    assert env_legacypipe['VER_%s' % EnvironmentManager._shorts_stage[stage]] == version
         tractor_legacypipe = SimCatalog(legacypipe_fn)
 
         output_dirs = []
@@ -243,6 +245,7 @@ def test_environment_manager_runlist():
             pass
         assert runlist.main(['--outdir','.']) is None
         runcat = runlist.main(['--outdir',legacypipe_dir[run],'--modules'] + modules)
+        assert runcat is not None
         assert not os.path.exists(list_fn)
         list_fn = os.path.join(output_dirs[3],'runlist.txt')
         run_shell(['python',runlist.__file__] + ['--outdir',output_dirs[0],'--source','legacysim','--write-list',list_fn,'--modules'] + modules)
@@ -260,7 +263,7 @@ def test_environment_manager_runlist():
                             + ['--outdir',output_dirs[3],'--stage',stage,'--env-header',legacypipe_fn,';']
                 #run_shell([tmppythonpath,'python',runbrick.__file__] + runbrick_args \
                 #            + ['--outdir',output_dirs[3],'--stage',stage,'--env-header',legacypipe_fn])
-            run_shell(command)
+            run_shell(command,check=True)
         # check same headers
         for iout,output_dir in enumerate(output_dirs):
 
@@ -272,3 +275,35 @@ def test_environment_manager_runlist():
             if iout <= 2: assert tractor_legacysim == tractor_legacypipe
 
         #print(header_legacypipe)
+
+def test_docker_versions():
+
+    header_legacypipe = fitsio.read_header(find_file(base_dir='out-testcase3-legacypipe-run1',filetype='tractor',source='legacypipe',brickname='2447p120'))
+    em = EnvironmentManager(header=header_legacypipe)
+
+    for docker,versions in EnvironmentManager._docker_versions.items():
+        split_stages = 3
+        legacypipe_versions = {stage:versions['legacypipe'] for stage in Stages.all()[:split_stages]}
+        legacypipe_versions.update({stage:'DR9.6.7' for stage in Stages.all()[split_stages:]})
+        for module,version in versions.items():
+            if module == 'legacypipe':
+                for stage in Stages.all():
+                    em.header['VER_%s' % EnvironmentManager._shorts_stage[stage]] = legacypipe_versions[stage]
+            else:
+                for k in em.header:
+                    if k.startswith('DEPNAM') and em.header[k] == module:
+                        em.header[k.replace('DEPNAM','DEPVER')] = version
+                        break
+
+        for stage in Stages.all():
+            for module,version in versions.items():
+                if module == 'legacypipe':
+                    assert em.get_module_version(module=module,stage=stage) == legacypipe_versions[stage]
+                else:
+                    assert em.get_module_version(module=module,stage=stage) == version
+
+        for istage,stage in enumerate(Stages.all()):
+            if docker != 'DR9.6.7' and istage >= split_stages:
+                assert em.get_module_version(module='docker',stage=stage) == 'DR9.6.7b'
+            else:
+                assert em.get_module_version(module='docker',stage=stage) == docker
