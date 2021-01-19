@@ -18,3 +18,4 @@ for docker,versions in EnvironmentManager._docker_versions.items():
             version = get_git_version(os.path.join(module_dir,module))
         print(docker,module,version,versions[module])
         assert version == versions[module]
+    print('All packages ok.')
