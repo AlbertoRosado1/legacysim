@@ -120,6 +120,7 @@ def write_randoms(truth_fn, injected_fn, bricknames=None, density=1e3, seed=None
 def write_legacysurvey_randoms(randoms_fn, truth_fn, injected_fn, bricknames=None, seed=None):
     """Build legacysim catalog of injected sources from legacysurvey randoms and truth table."""
     bricknames = bricknames or []
+    logger.info('Reading randoms file %s',randoms_fn)
     randoms = SimCatalog(randoms_fn)
     logger.info('Selecting randoms in %s',bricknames)
     mask = np.in1d(randoms.brickname,bricknames)
@@ -131,6 +132,7 @@ def write_legacysurvey_randoms(randoms_fn, truth_fn, injected_fn, bricknames=Non
     for photsys in ['N','S']:
         truth = get_truth(truth_fn,south=photsys=='S')
         mask = randoms.photsys == photsys
+        logger.info('Found %d randoms in %s.',mask.sum(),photsys)
         if mask.any():
             randoms.fill(sample_from_truth(randoms[mask],truth,seed=seed),index_self=mask,index_other=None)
 

@@ -30,7 +30,6 @@ def main(args=None):
     opt = parser.parse_args(args=utils.get_parser_args(args))
     RunCatalog.set_default_output_cmdline(opt)
     runcat = RunCatalog.from_output_cmdline(opt)
-    print(runcat.brickname)
     if opt.cat_fn is None:
         opt.cat_fn = os.path.join(opt.cat_dir,(cat_legacypipe_base_template if opt.source == 'legacypipe' else cat_base_template) % {'filetype':opt.filetype})
     merge = CatalogMerging(base_dir=opt.output_dir,runcat=runcat,source=opt.source)

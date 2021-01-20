@@ -252,7 +252,7 @@ def test_case3_shape():
                             '--outdir', output_dir,
                             '--seed', 42,
                             '--threads', 2,
-                            '--verbose', '--log-fn', log_fn] + extra_args)
+                            '--verbose', '--write-log', log_fn] + extra_args)
 
         setup_logging(logging.INFO)
 
@@ -338,7 +338,7 @@ def test_mzlsbass2():
                             '--outdir', output_dir,
                             '--sim-blobs',
                             '--seed', 42,
-                            '--verbose','--log-fn', log_fn] + extra_args)
+                            '--verbose','--write-log', log_fn] + extra_args)
 
         setup_logging(logging.INFO)
 
@@ -375,7 +375,7 @@ def test_mzlsbass2():
 def test_rerun():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-    output_dirs = ['out-case3-legacysim-rerun-%d' % i for i in range(1,3)]
+    output_dirs = ['out-testcase3-legacysim-rerun-%d' % i for i in range(1,3)]
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
     for output_dir in output_dirs:
@@ -402,28 +402,27 @@ def test_rerun():
         fn = find_file(base_dir=output_dirs[0],filetype='tractor',brickname=brickname,source='legacysim')
         tractor_ref = SimCatalog(fn)
 
-        for stages in [['outliers','writecat'],
-                        ['refs','fitblobs','writecat']]:
+        for istages,stages in enumerate([['outliers','writecat'],['refs','fitblobs','writecat']]):
 
             shutil.rmtree(output_dirs[1],ignore_errors=True)
 
             for istage,stage in enumerate(stages):
 
-                args = common_args + ['--stage',stage,'--outdir',output_dirs[1]]
-                if istage == 0:
+                args = common_args + ['--write-stage',stage,'--stage',stage,'--outdir',output_dirs[1]]
+                if istages == 0 or istage == 0:
                     args += ['--injected-fn',injected_fn]
+                assert '--force-all' not in args
                 runbrick.main(args=args)
 
             fn = find_file(base_dir=output_dirs[1],filetype='tractor',brickname=brickname,source='legacysim')
             tractor = SimCatalog(fn)
-
             assert tractor == tractor_ref
 
 
 def test_skipid():
 
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
-    output_dir = 'out-case3-legacysim-skipid'
+    output_dir = 'out-testcase3-legacysim-skipid'
     os.environ['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
     os.environ['GAIA_CAT_VER'] = '2'
     checkpoint_fn = os.path.join(output_dir,'checkpoint.pickle')
@@ -433,6 +432,8 @@ def test_skipid():
     brickname = '2447p120'
     zoom = [1020,1070,2775,2815]
     injected = generate_injected(brickname,zoom=[1020,1070,2785,2815],mag_range=[19.,20.],shape_r_range=[0.,0.],size=2)
+    rng = np.random.RandomState(seed=42)
+    injected.seed = rng.randint(int(2**32 - 1),size=injected.size)
     injected.writeto(injected_fn)
 
     for extra_args in [['--col-radius', 3600],
@@ -443,7 +444,6 @@ def test_skipid():
                             '--no-wise', '--no-write',
                             '--survey-dir', survey_dir,
                             '--outdir', output_dir,
-                            '--seed', 42,
                             '--col-radius', 3600,
                             '--threads', 1] + extra_args
 
@@ -451,6 +451,7 @@ def test_skipid():
 
         fn = find_file(base_dir=output_dir,filetype='injected',brickname=brickname,source='legacysim')
         injected_skip0 = SimCatalog(fn)
+        assert np.all(injected_skip0.seed == injected.seed)
 
         if '--col-radius' in extra_args and extra_args[extra_args.index('--col-radius')-1] > 3000:
             assert (injected_skip0.collided.sum() > 0) and (injected_skip0.collided.sum() < injected_skip0.size)

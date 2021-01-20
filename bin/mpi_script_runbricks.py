@@ -18,9 +18,12 @@ with TaskManager(ntasks=ntasks) as tm:
         for stage,versions in run.stages.items():
             command = ['./runbrick.sh']
             command += ['--brick',run.brickname,'--threads',threads,'--outdir',settings.output_dir,'--run',settings.run,
-                        '--injected-fn',settings.injected_fn,'--fileid',run.fileid,'--rowstart',run.rowstart,
-                        '--skipid',run.skipid,'--sim-blobs','--sim-stamp','tractor','--no-wise','--no-write','--stage',stage,
+                        '--injected-fn',settings.injected_fn,'--fileid',run.fileid,'--rowstart',run.rowstart,'--skipid',run.skipid,
+                        '--sim-blobs','--sim-stamp','tractor','--no-wise','--no-write','--stage',stage,
                         '--legpipedir',settings.legacypipe_output_dir,';']
+            if stage != 'writecat':
+                command += ['--write-stage',stage]
+            command += [';']
 
         #print(command)
         output = run_shell(command)

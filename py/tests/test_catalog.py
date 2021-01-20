@@ -127,6 +127,11 @@ def test_sim():
     assert np.all(cat.id == np.arange(len(cat)))
     assert np.all(cat.brickname == '2599p187')
     assert 'seed' in cat.fields
+    seed = cat.seed.copy()
+    cat.fill_legacysim()
+    assert np.all(cat.seed == seed)
+    cat.fill_legacysim(seed=42)
+    assert not np.all(cat.seed == seed)
     mask = cat.mask_collisions(radius_in_degree=1.)
     assert mask[1:].all()
     ind1,ind2 = cat.match_radec(cat[::-1],radius_in_degree=1e-6)

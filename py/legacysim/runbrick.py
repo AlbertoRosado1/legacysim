@@ -109,11 +109,11 @@ python -u legacysim/runbrick.py --plots --brick 2440p070 --zoom 1900 2400 450 95
                         Used to fill or replace `seed` column if provided.')
     parser.add_argument('--env-header', type=str, default=None, help='Catalog file name to read header from to setup environment variables. \
                         If not provided, environment is not updated.')
-    parser.add_argument('--log-fn', nargs='?', type=str, default=None, const=True, help='Log to given file name instead of stdout. \
-                        If file name is not provided, used the default file name (in "outdir/logs")')
+    parser.add_argument('--write-log', nargs='?', type=str, default=None, const=True, help='Write log to given file name instead of stdout. \
+                        If file name is not provided, use the default file name (in "outdir/logs")')
     parser.add_argument('--ps', nargs='?', type=str, default=False, const=True,
                         help='Run "ps" and write results to file name. \
-                        If file name is not provided, used the default file name (in "outdir/metrics")')
+                        If file name is not provided, use the default file name (in "outdir/metrics")')
     parser.add_argument('--ps-t0', type=int, default=0, help='Unix-time start for "--ps"')
     return parser, args_runbrick
 
@@ -320,7 +320,7 @@ def main(args=None):
     ps_fn = optdict.pop('ps', False)
     ps_t0 = optdict.pop('ps_t0', 0)
     verbose = optdict.pop('verbose')
-    log_fn = optdict.pop('log_fn', None)
+    write_log = optdict.pop('write_log', None)
 
     if opt.brick is None and opt.radec is None:
         parser.print_help()
@@ -346,14 +346,14 @@ def main(args=None):
 
             survey, kwargs = get_runbrick_kwargs(args_runbrick,**optdict)
 
-            if log_fn and not isinstance(log_fn,str):
-                log_fn = survey.find_file('log',brick=opt.brick,output=True)
+            if write_log and not isinstance(write_log,str):
+                write_log = survey.find_file('log',brick=opt.brick,output=True)
             if verbose == 0:
                 level = logging.INFO
             else:
                 level = logging.DEBUG
 
-            setup_logging(level,filename=log_fn)
+            setup_logging(level,filename=write_log)
             # tractor logging is *soooo* chatty
             logging.getLogger('tractor.engine').setLevel(level + 10)
 

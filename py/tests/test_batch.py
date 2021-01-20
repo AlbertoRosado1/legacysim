@@ -213,7 +213,7 @@ def test_environment_manager_runlist():
 
             assert os.environ == environ
 
-            args = ['--module-dir',module_dir,'--outdir',legacypipe_dir[run],'--brick',brickname,'--full-pythonpath']
+            args = ['--module-dir',module_dir,'--outdir',legacypipe_dir[run],'--brick',brickname,'--full-pythonpath','--modules','legacypipe']
             if stage != 'writecat': args += ['--stage',stage]
 
             old_stdout = sys.stdout

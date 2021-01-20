@@ -41,6 +41,8 @@ class EnvironmentManager(object):
     Only **legacypipe** and **legacysim** versions are saved for every stage in catalog headers.
     Other package versions are saved at the beginning of each run (stage 'tims'),
     and hence may not reflect the actual version used in any stage of the run.
+    **legacypipe** catalog headers can be matched to a version of **legacypipe** Docker image (see :mod:`get_module_version`).
+    However, for the same reason as above, this match may be ambiguous for any stage different than 'tims'.
     """
 
     _shorts_env = {'LARGEGALAXIES_CAT':'LARGEGALAXIES_CAT','TYCHO2_KD_DIR':'TYCHO2_KD',\
@@ -163,7 +165,7 @@ class EnvironmentManager(object):
         Return module version for stage.
 
         **legacypipe** and **legacysim** runs are performed within a Docker container.
-        To return (one of) the Docker container that matches the module versions in the catalog header,
+        To return (one of) the Docker image version that matches the module versions in the catalog header,
         pass ``module == 'docker'``.
 
         Parameters
@@ -302,8 +304,9 @@ def main(args=None):
     #setup_logging()
     logging.disable(sys.maxsize)
     parser = argparse.ArgumentParser(description='EnvironmentManager',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--module-dir', type=str, default='.', help='Directory containing modules')
-    parser.add_argument('--modules', type=str, nargs='*', default=['legacypipe'], help='Modules to search version for')
+    parser.add_argument('--module-dir', type=str, default='/src/', help='Directory containing modules')
+    parser.add_argument('--modules', type=str, nargs='*', default=['docker'], help='Modules to add in the PYTHONPATH. \
+                        Pass "docker" to add in the PYTHONPATH a directory containing packages of the corresponding legacypipe Docker image.')
     parser.add_argument('--stage', type=str, choices=Stages.all(), default='fitblobs',
                         help='Version for this stage')
     parser.add_argument('--full-pythonpath', action='store_true', default=False,

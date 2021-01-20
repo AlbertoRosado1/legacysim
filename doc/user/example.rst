@@ -37,13 +37,14 @@ Exit the shifter image and run **legacysim** (see :ref:`user-running`)::
   exit
   srun -n 2 shifter --module=mpich-cle6 --volume ${HOME}:/homedir/ --image={dockerimage} ./mpi_runbricks.sh
 
-Check everything ran, match and plot the comparison (see :ref:`user-post-processing`)::
+Check everything ran, match, plot the comparison (see :ref:`user-post-processing`)::
 
-  python /src/legacysim/py/legacysim/scripts/check.py --outdir $CSCRATCH/legacysim/dr9/test --brick bricklist_400N-EBV.txt
+  shifter --volume ${HOME}:/homedir/ --image={dockerimage} /bin/bash
+  python /src/legacysim/py/legacysim/scripts/check.py --outdir $CSCRATCH/legacysim/dr9/test --list runlist.txt
   python /src/legacysim/py/legacysim/scripts/match.py --cat-dir $CSCRATCH/legacysim/dr9/test/merged --outdir $CSCRATCH/legacysim/dr9/test --plot-hist plots/hist.png
 
 You can also merge catalogs, plot cpu and memory usage, image cutouts::
 
-  python /src/legacysim/py/legacysim/scripts/merge.py --filetype injected tractor --cat-dir $CSCRATCH/legacysim/dr9/test/merged --outdir $CSCRATCH/legacysim/dr9/test
+  python /src/legacysim/py/legacysim/scripts/merge.py --filetype tractor --cat-dir $CSCRATCH/legacysim/dr9/test/merged --outdir $CSCRATCH/legacysim/dr9/test
   python /src/legacysim/py/legacysim/scripts/resources.py --outdir $CSCRATCH/legacysim/dr9/test --plot-fn plots/resources-summary.png
   python /src/legacysim/py/legacysim/scripts/cutout.py --outdir $CSCRATCH/legacysim/dr9/test --plot-fn "plots/cutout_%(brickname)s-%(icut)d.png" --ncuts 2

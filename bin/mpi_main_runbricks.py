@@ -1,6 +1,7 @@
 """Run :mod:`legacysim.runbrick`."""
 
 import os
+import time
 from legacysim import RunCatalog,find_file,runbrick
 from legacysim.batch import TaskManager,run_shell,get_pythonpath
 import settings
@@ -22,9 +23,12 @@ with TaskManager(ntasks=ntasks) as tm:
             command += [pythonpath]
             command += ['python',runbrick.__file__]
             command += ['--brick',run.brickname,'--threads',threads,'--outdir',settings.output_dir,'--run',settings.run,
-                        '--injected-fn',settings.injected_fn,'--fileid',run.fileid,'--rowstart',run.rowstart,
-                        '--skipid',run.skipid,'--sim-blobs','--sim-stamp','tractor','--no-wise','--no-write','--stage',stage,
-                        '--env-header',legacypipe_fn,';']
+                        '--injected-fn',settings.injected_fn,'--fileid',run.fileid,'--rowstart',run.rowstart,'--skipid',run.skipid,
+                        '--sim-blobs','--sim-stamp','tractor','--no-wise','--stage',stage,
+                        '--ps','--ps-t0',int(time.time()),'--write-log','--env-header',legacypipe_fn]
+            if stage != 'writecat':
+                command += ['--write-stage',stage]
+            command += [';']
 
         #print(command)
         run_shell(command)
@@ -36,7 +40,7 @@ with TaskManager(ntasks=ntasks) as tm:
         #    command = ['--brick',run.brickname,'--threads',threads,'--outdir',settings.output_dir,'--run',settings.run,
         #                    '--injected-fn',settings.injected_fn,'--fileid',run.fileid,'--rowstart',run.rowstart,
         #                    '--skipid',run.skipid,'--sim-blobs','--sim-stamp','tractor','--no-wise','--no-write',
-        #                    #'--log',
+        #                    #'--write-log',
         #                    '--ps','--ps-t0',int(time.time())]
         #
         #    print('Launching ' + ' '.join(map(str,command)))
