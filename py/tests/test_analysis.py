@@ -216,30 +216,49 @@ def test_cutout():
     #image.read_image(filetype=filetypes[0],xmin=zoom[0],ymin=zoom[2])
     image.read_image(filetype=filetypes[0])
     image.read_image_wcs()
-    image.read_sources(filetype='injected')
-    slicex,slicey = image.suggest_zooms(boxsize_in_pixels=20,range_observed_injected_in_degree=[0.,1.])[0]
-    #filetypes = ['image','model']
-    fig,lax = plt.subplots(ncols=len(filetypes),sharex=False,sharey=False,figsize=(4*len(filetypes),4),squeeze=False)
-    fig.subplots_adjust(hspace=0.2,wspace=0.2)
-    lax = lax.flatten()
 
-    for ax,filetype in zip(lax,filetypes):
-        image.read_image(filetype=filetype)
-        image.set_subimage(slicex,slicey)
-        image.plot(ax)
-        image.plot_sources(ax)
-    utils.savefig(fn=os.path.join(output_dir,'injected_sources.png'))
+    def plot_subimage():
+        fig,lax = plt.subplots(ncols=len(filetypes),sharex=False,sharey=False,figsize=(4*len(filetypes),4),squeeze=False)
+        fig.subplots_adjust(hspace=0.2,wspace=0.2)
+        lax = lax.flatten()
+
+        for ax,filetype in zip(lax,filetypes):
+            image.read_image(filetype=filetype)
+            image.set_subimage(slicex,slicey)
+            image.plot(ax)
+            image.plot_sources(ax)
+        utils.savefig(fn=os.path.join(output_dir,'injected_sources.png'))
+
+    image.read_sources(filetype='injected')
+    injected_id = image.sources.id
+    slicex,slicey = image.suggest_zooms(boxsize_in_pixels=20,range_observed_injected_in_degree=[0.,1.])[0][0]
+    plot_subimage()
+    image.read_image(filetype=filetypes[0]) # because image has just been cut
+    slicex,slicey = image.get_zooms(boxsize_in_pixels=15)[0]
+    assert np.all(image.sources.id == injected_id)
+    plot_subimage()
+    image.read_sources(filetype='tractor')
+    obj_id = image.sources.objid
+    image.read_image(filetype=filetypes[0])
+    slicex,slicey = image.get_zooms(boxsize_in_pixels=20)[0]
+    plot_subimage()
 
     base_kwargs = {'outdir':output_dir}
     for extra_kwargs in [{},
-                        {'ncuts':2,'plot-fn':os.path.join(output_dir,'cutout-%(brickname)s-%(icut)d.png')}]:
+                        {'ncuts':2,'plot-fn':os.path.join(output_dir,'cutout-%(brickname)s-%(iobj)d.png')},
+                        {'injected-id':list(injected_id[:3])},
+                        {'obj-id':list(obj_id[:3]),'boxsize':40}]:
         all_kwargs = {**base_kwargs,**extra_kwargs}
         cutout.main(all_kwargs)
-        fn = all_kwargs.get('plot-fn',None)
-        if fn is None:
+        plot_fn = all_kwargs.get('plot-fn',None)
+        if plot_fn is None:
             image_fn = find_file(base_dir=output_dir,source='legacysim',filetype='image-jpeg',brickname=brickname)
-            fn = os.path.join(os.path.dirname(image_fn),'cutout-%(brickname)s-%(icut)d.png')
-        ncuts = all_kwargs.get('ncuts',np.inf)
-        paths = glob.glob(fn.replace('%(icut)d.png','*.png')  % {'brickname':brickname})
-        assert (len(paths) >= 1) and (len(paths) <= ncuts)
-        for fn in paths: os.remove(fn)
+            plot_fn = os.path.join(os.path.dirname(image_fn),'cutout-%(brickname)s-%(iobj)d.png')
+        ncuts = all_kwargs.get('ncuts',0)
+        if 'injected-id' in all_kwargs:
+            ncuts += len(all_kwargs['injected-id'])
+        if 'obj-id' in all_kwargs:
+            ncuts += len(all_kwargs['obj-id'])
+        fns = glob.glob(plot_fn.replace('%(iobj)d.png','*.png')  % {'brickname':brickname})
+        assert len(fns) == ncuts
+        for fn in fns: os.remove(fn)

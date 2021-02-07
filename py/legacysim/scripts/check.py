@@ -19,8 +19,8 @@ logger = logging.getLogger('legacysim.check')
 
 
 def main(args=None):
-
-    parser = argparse.ArgumentParser(description='Check',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    """Check runs."""
+    parser = argparse.ArgumentParser(description=main.__doc__,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--read', action='store_true', default=False,
                         help='Try read file from disk?')
     runlist_template = 'runlist.txt'

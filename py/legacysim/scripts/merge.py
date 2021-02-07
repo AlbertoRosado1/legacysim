@@ -19,7 +19,8 @@ logger = logging.getLogger('legacysim.merge')
 
 
 def main(args=None):
-    parser = argparse.ArgumentParser(description='Merge',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    """Merge catalogs."""
+    parser = argparse.ArgumentParser(description=main.__doc__,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--cat-dir', type=str, default='.', help='Directory for merged catalogs')
     cat_base_template = 'merged_%(filetype)s.fits'
     cat_legacypipe_base_template = 'merged_%(filetype)s_legacypipe.fits'

@@ -12,8 +12,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../py/'))
-sys.path.insert(0, os.path.abspath('../py/legacysim'))
+sys.path.insert(0,os.path.abspath('../py/'))
+sys.path.insert(0,os.path.abspath('../py/legacysim'))
 from _version import __version__,__docker_image__
 
 # -- General configuration ------------------------------------------------

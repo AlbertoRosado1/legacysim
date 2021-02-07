@@ -303,7 +303,7 @@ def main(args=None):
     #from legacysim import setup_logging
     #setup_logging()
     logging.disable(sys.maxsize)
-    parser = argparse.ArgumentParser(description='EnvironmentManager',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description=main.__doc__,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--module-dir', type=str, default='/src/', help='Directory containing modules')
     parser.add_argument('--modules', type=str, nargs='*', default=['docker'], help='Modules to add in the PYTHONPATH. \
                         Pass "docker" to add in the PYTHONPATH a directory containing packages of the corresponding legacypipe Docker image.')

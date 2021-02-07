@@ -18,8 +18,8 @@ logger = logging.getLogger('legacysim.runlist')
 
 
 def main(args=None,force_write=False):
-
-    parser = argparse.ArgumentParser(description='RunList',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    """Produce list of runs."""
+    parser = argparse.ArgumentParser(description=main.__doc__,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     runlist_template = 'runlist.txt'
     for key in get_sim_id.keys():
         parser.add_argument('--%s-out' % key, nargs='*', type=int, default=None, help='Write these %ss in run list.' % key)

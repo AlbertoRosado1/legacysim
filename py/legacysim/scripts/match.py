@@ -21,8 +21,8 @@ logger = logging.getLogger('legacysim.match')
 
 
 def main(args=None):
-
-    parser = argparse.ArgumentParser(description='Match',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    """Match input to output catalogs."""
+    parser = argparse.ArgumentParser(description=main.__doc__,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--injected', type=str, default=None,
                         help='File name of merged injected sources')
     parser.add_argument('--tractor', type=str, default=None,

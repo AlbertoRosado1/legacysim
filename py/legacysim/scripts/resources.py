@@ -20,8 +20,8 @@ logger = logging.getLogger('legacysim.resources')
 
 
 def main(args=None):
-
-    parser = argparse.ArgumentParser(description='Resources',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    """Plot resources."""
+    parser = argparse.ArgumentParser(description=main.__doc__,formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--do', type=str, choices=['single','summary'], default='summary',
                         help='Pass "single" for a time series for each run; "summary" for summary statistics of all runs')
     plot_summary_base = 'resources-summary.png'

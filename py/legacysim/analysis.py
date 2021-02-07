@@ -82,10 +82,10 @@ class BaseImage(object):
 
         Parameters
         ----------
-        slicex : slice
+        slicex : slice, default=slice(0,None)
             Slice along x-axis (second axis of :attr:`img`).
 
-        slicey : slice
+        slicey : slice, default=slice(0,None)
             Slice along y-axis (first axis of :attr:`img`).
         """
         self.xmin = self.xmin + slicex.start
@@ -266,26 +266,66 @@ class ImageAnalysis(BaseImage):
             self.sources.bx = bx - 1
             self.sources.by = by - 1
 
-    def suggest_zooms(self, boxsize_in_pixels=None, match_in_degree=0.1/3600, range_observed_injected_in_degree=(5./3600,30./3600)):
+    def get_zooms(self, boxsize_in_pixels=None, full_only=False):
         """
-        Suggest image cutouts around injected sources and within some distance to true sources.
+        Return image cutouts around attr:`sources`.
 
         Parameters
         ----------
         boxsize_in_pixels : int, default=None
-            Box size (pixel) around the injected source.
+            Box size (pixel) around the attr:`sources`.
             If ``None``, defaults to image smaller side divided by 36.
 
-        match_in_degree : float, default=0.1/3600
-            Radius (degree) to match injected to output sources.
-
-        range_observed_injected_in_degree : tuple, list, default=(5./3600,30./3600)
-            Range (degree) around the injected source where to find a true source.
+        full_only : bool, default=False
+            Return only the cutouts which are not cropped in the edges.
 
         Returns
         -------
         slices : list
-            List of slice ``(slicex,slicey)``, to be passed to :meth:`set_subimage`.
+            List of slices ``(slicex,slicey)``, to be passed to :meth:`set_subimage`.
+
+        indices : ndarray
+            If ``full_only == True``, corresponding indices in :attr:`sources`.
+        """
+        if boxsize_in_pixels is None: boxsize_in_pixels = np.min(self.shape[:2])//36
+        bx,by = np.rint(self.sources.bx-self.xmin).astype(int),np.rint(self.sources.by-self.ymin).astype(int)
+        halfsize = boxsize_in_pixels//2
+        rangex = bx-halfsize,bx+boxsize_in_pixels-halfsize+1
+        rangey = by-halfsize,by+boxsize_in_pixels-halfsize+1
+        if full_only:
+            mask_boxsize = (rangex[0]>=0) & (rangex[-1]<=self.shape[1]) & (rangey[0]>=0) & (rangey[-1]<=self.shape[0])
+            rangex =  np.array([r[mask_boxsize] for r in rangex]).T
+            rangey = np.array([r[mask_boxsize] for r in rangey]).T
+        else:
+            rangex = np.clip(rangex,0,self.shape[1]).T
+            rangey = np.clip(rangey,0,self.shape[0]).T
+        slices = [(slice(rx[0],rx[1]),slice(ry[0],ry[1])) for rx,ry in zip(rangex,rangey)]
+        if full_only:
+            return slices,np.flatnonzero(mask_boxsize)
+        return slices
+
+    def suggest_zooms(self, boxsize_in_pixels=None, match_in_degree=0.1/3600, range_observed_injected_in_degree=(5./3600,30./3600)):
+        """
+        Suggest image cutouts around attr:`sources` and within some distance to **Tractor** sources.
+
+        Parameters
+        ----------
+        boxsize_in_pixels : int, default=None
+            Box size (pixel) around the attr:`sources`; see :meth:`get_zooms`.
+
+        match_in_degree : float, default=0.1/3600
+            Radius (degree) to match attr:`sources` to **Tractor** sources.
+
+        range_observed_injected_in_degree : tuple, list, default=(5./3600,30./3600)
+            Range (degree) around the attr:`sources` where to find a **Tractor** source.
+
+        Returns
+        -------
+        slices : list
+            List of slices ``(slicex,slicey)``, to be passed to :meth:`set_subimage`.
+
+        indices : ndarray
+            Corresponding indices in :attr:`sources`.
         """
         fn = find_file(base_dir=self.base_dir,filetype='tractor',brickname=self.brickname,source=self.source,**self.kwargs_simid)
         tractor = SimCatalog(fn)
@@ -298,18 +338,13 @@ class ImageAnalysis(BaseImage):
         if not mask_inrange.any():
             raise ValueError('No random/tractor pair found within range = %s, you should try larger range' % range_observed_injected_in_degree)
         index_sources = np.unique(index_sources[mask_inrange])
-        if boxsize_in_pixels is None: boxsize_in_pixels = np.min(self.shape[:2])//36
-        bx,by = np.rint(self.sources.bx[index_sources]).astype(int)-self.xmin,np.rint(self.sources.by[index_sources]).astype(int)-self.ymin
-        halfsize = boxsize_in_pixels//2
-        rangex = bx-halfsize,bx+boxsize_in_pixels-halfsize+1
-        rangey = by-halfsize,by+boxsize_in_pixels-halfsize+1
-        mask_boxsize = (rangex[0]>=0) & (rangex[-1]<=self.shape[1]) & (rangey[0]>=0) & (rangey[-1]<=self.shape[0])
-        if not mask_boxsize.any():
+        sources = self.sources
+        self.sources = sources[index_sources] # since get_zooms works with self.sources
+        slices,index_boxsize = self.get_zooms(boxsize_in_pixels=boxsize_in_pixels,full_only=True)
+        self.sources = sources
+        if not len(slices):
             raise ValueError('Boxsize too large')
-        rangex = tuple(r[mask_boxsize] for r in rangex)
-        rangey = tuple(r[mask_boxsize] for r in rangey)
-        slices = [(slice(rangex[0][i],rangex[1][i]),slice(rangey[0][i],rangey[1][i])) for i in range(mask_boxsize.sum())]
-        return slices
+        return slices,index_sources[index_boxsize]
 
     def plot_sources(self, ax, radius_in_pixel=3./0.262, dr=None, color='r'):
         """
@@ -695,7 +730,7 @@ class CatalogMatching(CatalogMerging):
         Add :attr:`input` and :attr:`output` **Tractor** catalog to ``self``.
 
         By default, only the sources injected by **legacysim** are considered for ``input``.
-        These can be merged to the sources fitted by **legacypipe** by setting ``add_input_tractor``.
+        These can be merged to the sources detected by **legacypipe** by setting ``add_input_tractor``.
 
         Parameters
         ----------
@@ -734,6 +769,7 @@ class CatalogMatching(CatalogMerging):
         self.inter_input,self.inter_output,self.distance = [],[],[]
         index_input,index_output = self.input.index(),self.output.index()
         for mask_input,mask_output in zip(self.runcat.iter_mask(self.input),self.runcat.iter_mask(self.output)):
+            # to avoid applying simid cuts on observed sources (of the legacypipe run), i.e. we keep all observed sources in the brick
             mask_input[self.observed] = self.input.brickname[self.observed] == self.input.brickname[self.injected][0]
             inter_input,inter_output,distance = self.input[mask_input].match_radec(self.output[mask_output],nearest=True,
                                                                                     radius_in_degree=radius_in_degree,return_distance=True)

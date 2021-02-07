@@ -135,7 +135,7 @@ def saveplot(giveax=True):
     def decorator(func):
 
         @functools.wraps(func)
-        def wrapper(self,ax=None,fn=None,kwargs_fig=None,**kwargs):
+        def wrapper(self, ax=None, fn=None, kwargs_fig=None, **kwargs):
             isax = True
             if giveax:
                 if ax is None:

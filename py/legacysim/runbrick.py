@@ -199,7 +199,7 @@ def run_brick(opt, survey, **kwargs):
         injected.writeto(injected_fn,primheader=header)
 
     if opt.forceall or 'injected' in opt.force or not os.path.isfile(injected_fn):
-        # legacypipe-only run if opt.skipid == 0 and random filename not provided
+        # legacypipe-only run if opt.skipid == 0 and random file name not provided
         if (not (opt.skipid > 0)) and (opt.injected_fn is None):
             survey.injected = SimCatalog()
             survey.injected.collided = survey.injected.falses()
@@ -251,8 +251,6 @@ def run_brick(opt, survey, **kwargs):
         kwargs.update(blobradec=blobradec)
 
     toret = runbrick.run_brick(opt.brick, survey, **kwargs)
-    injected[mask_injected] = survey.injected
-
     write_injected(injected,toret['version_header'])
 
     return toret

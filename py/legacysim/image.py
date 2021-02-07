@@ -100,7 +100,7 @@ class BaseSimImage(object):
         any_overlap = False
         for obj in self.survey.injected:
             t0 = Time()
-            logger.info('%s drawing object id=%d, band=%s, seed=%d: flux=%.2g, sersic=%.2f, shape_r=%.2f, shape_e1=%.2f, shape_e2=%.2f',
+            logger.info('%s drawing source id=%d, band=%s, seed=%d: flux=%.2g, sersic=%.2f, shape_r=%.2f, shape_e1=%.2f, shape_e2=%.2f',
                 objstamp.__class__.__name__,obj.id,objstamp.band,obj.seed,obj.get('flux_%s' % objstamp.band),obj.sersic,obj.shape_r,obj.shape_e1,obj.shape_e2)
             stamp = objstamp.draw(obj)
             if stamp is None:
