@@ -91,3 +91,12 @@ def test_gsimage():
     im3 = GSImage(array,xmin=1,ymin=1)
     im3[mask] = im2.array[mask]
     assert im3 == im2
+
+
+if __name__ == '__main__':
+
+    test_paths()
+    test_versions()
+    test_sim_id()
+    test_get_survey()
+    test_gsimage()

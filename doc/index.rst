@@ -88,5 +88,3 @@ References
 .. _`neural nets`: https://arxiv.org/abs/1907.11355
 
 .. _`eBOSS ELGs`: https://arxiv.org/abs/2007.08992
-
-.. _`Star Wars: Episode IV - A New Hope`: https://www.youtube.com/watch?v=0RDIJfoBhFU

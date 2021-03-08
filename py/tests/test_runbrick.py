@@ -461,3 +461,14 @@ def test_skipid():
         injected_skip1 = SimCatalog(fn)
         for field in ['ra','dec']:
             assert np.all(injected_skip1.get(field) == injected_skip0.get(field)[injected_skip0.collided])
+
+
+if __name__ == '__main__':
+
+    test_eq_legacypipe()
+    test_simblobs()
+    test_case3()
+    test_case3_shape()
+    test_mzlsbass2()
+    test_rerun()
+    test_skipid()

@@ -4,6 +4,7 @@ import logging
 import argparse
 
 import numpy as np
+import pytest
 
 from legacysim import setup_logging, BaseCatalog, SimCatalog, BrickCatalog, RunCatalog, get_sim_id, find_file, utils
 from legacysim.catalog import Versions, Stages, ListStages
@@ -309,12 +310,8 @@ def test_run():
         runcat3.stagesid[:runcat1.size] = runcat3.append_stages('outliers:a:v1 writecat:b:v2')
         runcat3.append(runcat4)
         assert runcat3.size == 3*runcat1.size
-        ok = False
-        try:
+        with pytest.raises(ValueError):
             runcat3.check()
-        except ValueError:
-            ok = True
-        assert ok
         runcat3.fileid[:runcat1.size] = 200
         runcat3.check()
         assert len(runcat3.get_list_stages()) == 3
@@ -353,3 +350,12 @@ def test_run():
                 if run.kwargs_simid not in tmp_kwargs_simids:
                     tmp_kwargs_simids.append(run.kwargs_simid)
             assert set(map(frozenset,tmp_kwargs_simids)) == set(map(frozenset,kwargs_simids))
+
+
+if __name__ == '__main__':
+
+    test_base()
+    test_sim()
+    test_brick()
+    test_stages()
+    test_run()

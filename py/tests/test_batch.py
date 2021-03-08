@@ -5,11 +5,12 @@ import shutil
 import importlib
 
 import numpy as np
+import pytest
 import fitsio
 import legacypipe
 from legacypipe import runbrick as lprunbrick
 
-from legacysim import setup_logging, runbrick, SimCatalog, RunCatalog, find_file
+from legacysim import setup_logging, runbrick, SimCatalog, RunCatalog, find_file, utils
 from legacysim.catalog import ListStages, Stages
 from legacysim.batch import TaskManager, EnvironmentManager, environment_manager, run_shell, get_pythonpath
 from legacysim.scripts import runlist
@@ -33,35 +34,29 @@ def test_task_manager():
 def test_environment_manager_runlist():
     # here we run legacypipe and legacysim for different configurations, using environment_manager and runlist scripts
     survey_dir = os.path.join(os.path.dirname(__file__), 'testcase3')
+    tmp_dir = os.path.join(os.path.dirname(__file__), 'out-testbatch')
     # first create environment variables
     names_environ,shorts_environ = [],[]
     for name,short in EnvironmentManager._shorts_env.items():
-        names_environ.append(name)
-        shorts_environ.append(short)
+        if name not in ['LARGEGALAXIES_CAT','UNWISE_MODEL_SKY_DIR']: # else raises RuntimeError
+            names_environ.append(name)
+            shorts_environ.append(short)
     keys_version = ['LEGPIPEV'] + ['VER_%s' % short for short in EnvironmentManager._shorts_stage.values()]
     #keys_version.remove('VER_TIMS') # not in < DR9.6.7
     keys_version.remove('VER_WISE') # not run
     assert 'GAIA_CAT_DIR' in names_environ
     assert 'GAIA_CAT' in shorts_environ
 
-    def get_environ(nwise=4,rng=None):
+    def get_environ(nwise=3,rng=None):
         if rng is None: rng = np.random.RandomState()
         toret = {}
-        for iname,(name,short) in enumerate(EnvironmentManager._shorts_env.items()):
-            toret[name] = '%s_%d' % (name,iname) # fake paths
-        keys = []
-        for name,key in EnvironmentManager._keys_env.items():
+        for iname,name in enumerate(names_environ):
             if name == 'UNWISE_COADDS_DIR':
-                tmp = []
-                for i in range(nwise):
-                    keys.append('UNWISD%d' % (i+1))
-                    tmp.append('%s_%d' % (name,rng.randint(100)))
-                toret[name] = ':'.join(tmp) # fake paths
-            elif name not in ['UNWISE_MODEL_SKY_DIR']:
-                keys.append(key)
-                toret[name] = '%s_%d' % (name,rng.randint(100)) # fake paths
-        toret['GAIA_CAT_DIR'] = os.path.join(survey_dir, 'gaia')
-        return toret,keys
+                toret[name] = ':'.join(os.path.join(tmp_dir,'%s_%d_%d' % (name,iname,i)) for i in range(nwise))
+            else:
+                toret[name] = os.path.join(tmp_dir,'%s_%d' % (name,iname)) # fake paths
+        toret['GAIA_CAT_DIR'] = os.path.join(survey_dir,'gaia')
+        return toret
 
     # test versions
     modules = ['legacypipe']
@@ -92,7 +87,7 @@ def test_environment_manager_runlist():
 
     # clear os.environ for pytest
     for run,config in configs.items():
-        for key in list(config['environ'][0].keys()) + ['GAIA_CAT_VER']:
+        for key in list(config['environ'].keys()) + ['GAIA_CAT_VER']:
             if key in os.environ: del os.environ[key]
         legacypipe_dir[run] = 'out-testcase3-legacypipe-%s' % run
         pickle_dir[run] = 'pickles_%s' % run
@@ -106,7 +101,7 @@ def test_environment_manager_runlist():
                     # clear sys.path for pytest
                     if path in sys.path: sys.path.remove(path)
 
-    environ = os.environ.copy()
+    environ = dict(os.environ)
     os.environ['GAIA_CAT_VER'] = '2'
 
     # first run legacypipe
@@ -115,7 +110,7 @@ def test_environment_manager_runlist():
         shutil.rmtree(pickle_dir[run],ignore_errors=True)
         assert not os.path.isdir(pickle_dir[run])
 
-        os.environ.update(config['environ'][0])
+        os.environ.update(config['environ'])
 
         for stage,versions in config['stages']:
             for module,version in versions:
@@ -133,9 +128,10 @@ def test_environment_manager_runlist():
 
         shutil.rmtree(pickle_dir[run],ignore_errors=True)
         assert not os.path.isdir(pickle_dir[run])
-        os.environ = environ.copy()
+        os.environ.clear()
+        os.environ.update(environ)
 
-    def get_env(header,keys_environ):
+    def get_env(header):
         env = {}
         for key in header:
             if header[key] in shorts_environ:
@@ -145,7 +141,7 @@ def test_environment_manager_runlist():
             header['VER_TIMS'] = header['LEGPIPEV']
         if 'LSV_TIMS' not in header and 'LEGSIMV' in header:
             header['LSV_TIMS'] = header['LEGSIMV']
-        for key in keys_version + keys_environ:
+        for key in keys_version:
             env[key] = header[key]
         return env
 
@@ -156,6 +152,8 @@ def test_environment_manager_runlist():
                 pythonpath.append(path)
         sys.path = pythonpath
 
+    bak_check_env = EnvironmentManager._check_env
+
     # check EnvironmentManager works
     for irun,(run,config) in enumerate(configs.items()):
 
@@ -165,9 +163,8 @@ def test_environment_manager_runlist():
         legacypipe_fn = find_file(base_dir=legacypipe_dir[run],filetype='tractor',source='legacypipe',brickname=brickname)
         header_legacypipe = fitsio.read_header(legacypipe_fn)
         #print(header_legacypipe)
-        keys_environ = config['environ'][1]
-        env_legacypipe = get_env(header_legacypipe,keys_environ=keys_environ)
-        assert len(env_legacypipe) == len(shorts_environ) + len(keys_version) + len(keys_environ)
+        env_legacypipe = get_env(header_legacypipe)
+        assert len(env_legacypipe) == len(shorts_environ) + len(keys_version)
         for stage,versions in config['stages']:
             for module,version in versions:
                 if module == 'legacypipe':
@@ -190,6 +187,8 @@ def test_environment_manager_runlist():
             else:
                 args += ['--stage',stage]
 
+            EnvironmentManager._check_env = {} # avoids checks of environment variables
+
             # environment from legacypipe tractor header
             with EnvironmentManager(base_dir=legacypipe_dir[run],brickname=brickname) as em:
                 tmppythonpath = get_pythonpath(module_dir,[(module,em.get_module_version(module,stage=stage)) for module in modules],full=False)
@@ -208,10 +207,16 @@ def test_environment_manager_runlist():
 
             assert os.environ == environ
 
-            # runbrick environment handling
-            runbrick.main(args=args + ['--outdir',output_dirs[2]] + ['--env-header',legacypipe_fn])
+            EnvironmentManager._check_env = bak_check_env
 
-            assert os.environ == environ
+            # runbrick environment handling
+            with pytest.raises(ValueError):
+                runbrick.main(args=args + ['--outdir',output_dirs[2]] + ['--env-header',legacypipe_fn])
+
+            os.environ.update(config['environ']) # fallback to os.environ in EnvironmentManager
+            runbrick.main(args=args + ['--outdir',output_dirs[2]] + ['--env-header',legacypipe_fn])
+            os.environ.clear()
+            os.environ.update(environ)
 
             args = ['--module-dir',module_dir,'--outdir',legacypipe_dir[run],'--brick',brickname,'--full-pythonpath','--modules','legacypipe']
             if stage != 'writecat': args += ['--stage',stage]
@@ -235,7 +240,7 @@ def test_environment_manager_runlist():
 
             for e in env_shell[1:]:
                 key,val = e.split('=')
-                assert config['environ'][0][key] == val
+                assert config['environ'][key] == val
 
         shutil.rmtree(pickle_dir[run],ignore_errors=True)
         list_fn = 'runlist.txt'
@@ -255,24 +260,39 @@ def test_environment_manager_runlist():
         runcat2 = runlist.main(['--outdir',legacypipe_dir[run],'--source','legacypipe'])
         assert np.all(runcat2.stagesid == 0) and runcat2.get_list_stages() == ListStages([Stages()]) # only writecat, no version
 
+        #os.environ.update(config['environ']) # os.environ transmitted to subprocesses
+        os.makedirs(tmp_dir) #raises error if exists
+        for name in names_environ: # create temporary files
+            if name.endswith('_DIR'):
+                if name == 'UNWISE_COADDS_DIR':
+                    for d in config['environ'][name].split(':'): utils.mkdir(d)
+                else:
+                    utils.mkdir(config['environ'][name])
+            else:
+                open(config['environ'][name],'a').close()
+
         for run in runcat:
             command = []
             for stage,versions in run.stages.items():
                 tmppythonpath = 'PYTHONPATH=%s' % get_pythonpath(module_dir,versions,full=True,as_string=True)
                 command += [tmppythonpath,'python',runbrick.__file__] + runbrick_args \
-                            + ['--outdir',output_dirs[3],'--stage',stage,'--env-header',legacypipe_fn,';']
+                            + ['--outdir',output_dirs[3],'--stage',stage,'--env-header',legacypipe_fn,'--write-log',';']
                 #run_shell([tmppythonpath,'python',runbrick.__file__] + runbrick_args \
                 #            + ['--outdir',output_dirs[3],'--stage',stage,'--env-header',legacypipe_fn])
-            run_shell(command,check=True)
+            run_shell(command,check=False)
+        #os.environ.clear()
+        #os.environ.update(environ)
+        shutil.rmtree(tmp_dir,ignore_errors=False) # remove safely since did not exist
+
         # check same headers
-        for iout,output_dir in enumerate(output_dirs):
+        for output_dir in output_dirs:
 
             legacysim_fn = find_file(base_dir=output_dir,filetype='tractor',source='legacysim',brickname=brickname)
             header_legacysim = fitsio.read_header(legacysim_fn)
-            env_legacysim = get_env(header_legacysim,keys_environ)
+            env_legacysim = get_env(header_legacysim)
             assert env_legacypipe == env_legacysim
             tractor_legacysim = SimCatalog(legacysim_fn)
-            if iout <= 2: assert tractor_legacysim == tractor_legacypipe
+            assert tractor_legacysim == tractor_legacypipe
 
         #print(header_legacypipe)
 
@@ -307,3 +327,10 @@ def test_docker_versions():
                 assert em.get_module_version(module='docker',stage=stage) == 'DR9.6.7b'
             else:
                 assert em.get_module_version(module='docker',stage=stage) == docker
+
+
+if __name__ == '__main__':
+
+    test_task_manager()
+    test_environment_manager_runlist()
+    test_docker_versions()

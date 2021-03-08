@@ -14,7 +14,7 @@ The documentation can be built in or outside the Docker image::
   make html
 
 Changes to the ``rst`` files can be made from outside the Docker container.
-You can display the website (outside the Docker container) by opening ``_build/html/index.html/``.
+Documentation pages can be displayed by opening ``_build/html/index.html`` with your web browser (outside the Docker container).
 
 Finally, to push the documentation, `Read the Docs`_.
 

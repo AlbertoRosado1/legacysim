@@ -9,7 +9,6 @@ For details, run::
 
 import os
 import sys
-import re
 import logging
 import argparse
 import fitsio
@@ -46,10 +45,17 @@ class EnvironmentManager(object):
     """
 
     _shorts_env = {'LARGEGALAXIES_CAT':'LARGEGALAXIES_CAT','TYCHO2_KD_DIR':'TYCHO2_KD',\
-                    'GAIA_CAT_DIR':'GAIA_CAT','SKY_TEMPLATE_DIR':'SKY_TEMPLATE','GALEX_DIR':'galex'}
+                    'GAIA_CAT_DIR':'GAIA_CAT','SKY_TEMPLATE_DIR':'SKY_TEMPLATE','GALEX_DIR':'galex',\
+                    'UNWISE_COADDS_DIR':'unwise','UNWISE_COADDS_TIMERESOLVED_DIR':'unwise_tr','UNWISE_MODEL_SKY_DIR':'unwise_modelsky'}
 
-    _keys_env = {'UNWISE_COADDS_DIR':'UNWISD(?P<i>.*?)$','UNWISE_COADDS_TIMERESOLVED_DIR':'UNWISTD',\
-                'UNWISE_MODEL_SKY_DIR':'UNWISSKY'}
+    _check_env = {'LARGEGALAXIES_CAT':os.path.isfile,\
+                'TYCHO2_KD_DIR':os.path.isdir,\
+                'GAIA_CAT_DIR':os.path.isdir,\
+                'SKY_TEMPLATE_DIR':os.path.isdir,\
+                'GALEX_DIR':os.path.isdir,\
+                'UNWISE_COADDS_DIR': lambda v: all(os.path.isdir(path) for path in v.split(':')),\
+                'UNWISE_COADDS_TIMERESOLVED_DIR':os.path.isdir,\
+                'UNWISE_MODEL_SKY_DIR':os.path.isdir}
 
     _shorts_stage = {'tims':'TIMS','refs':'REFS','outliers':'OUTL','halos':'HALO','srcs':'SRCS','fitblobs':'FITB',
                 'coadds':'COAD','wise_forced':'WISE','writecat':'WCAT'}
@@ -120,17 +126,20 @@ class EnvironmentManager(object):
             self.header = fitsio.read_header(self.fn)
         # hack, since DR9.6.2 had no VER_TIMS entry
         if 'VER_TIMS' not in self.header: self.header['VER_TIMS'] = self.header['LEGPIPEV']
+        #print('OSENVIRON',os.environ)
         self.set_environ()
 
     def __enter__(self):
         """Save current environment variables and enter new environment."""
-        self._back_environ = os.environ.copy()
+        self._back_environ = dict(os.environ)
+        self.check_environ()
         os.environ.update(self.environ)
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         """Exit current environment and reset previous environment variables."""
-        os.environ = self._back_environ.copy()
+        os.environ.clear()
+        os.environ.update(self._back_environ)
 
     def set_environ(self):
         """Set environment variables :attr:`environ`."""
@@ -145,20 +154,24 @@ class EnvironmentManager(object):
             if value is not None:
                 logger.info(msg,name,value)
                 self.environ[name] = value
-        for name,keyw in self._keys_env.items():
-            value = None
-            for key in self.header:
-                if key == keyw:
-                    value = self.header[key]
-                    break
-                if re.fullmatch(keyw,key):
-                    if value is None:
-                        value = self.header[key]
-                    else:
-                        value = '%s:%s' % (value,self.header[key])
-            if value is not None:
-                logger.info(msg,name,value)
-                self.environ[name] = value
+
+    def check_environ(self):
+        """
+        Check whether variables in :attr:`environ` are valid (typically if directory or file exists on disk); else fall back to :attr:`os.environ`.
+
+        Raises
+        ------
+        ValueError : If a variable in :attr:`environ` is not valid and there is no fallback value in :attr:`os.environ`.
+        """
+        for name,value in self.environ.items():
+            if name not in self._check_env: continue
+            if not self._check_env[name](value):
+                if name not in os.environ:
+                    raise ValueError('Header value %s = %s is not valid and no corresponding environment variable is set.' % (name,value))
+                env_value = os.environ[name]
+                logger.warning('Header value %s = %s is not valid.',name,value)
+                logger.warning('Falling back to the environment value %s = %s.',name,env_value)
+                self.environ[name] = env_value
 
     def get_module_version(self, module, stage='writecat'):
         """

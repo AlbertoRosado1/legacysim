@@ -3,7 +3,7 @@
 Building
 ========
 
-The software stack is rather complicated. **legacysim** is a wrapper around **legacypipe**, which has many dependences.
+The software stack is rather complicated. **legacysim** is a wrapper around **legacypipe**, which has many dependencies.
 So there are two methods for installing everything, Docker and from scratch.
 
 legacysim with Docker

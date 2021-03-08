@@ -262,3 +262,13 @@ def test_cutout():
         fns = glob.glob(plot_fn.replace('%(iobj)d.png','*.png')  % {'brickname':brickname})
         assert len(fns) == ncuts
         for fn in fns: os.remove(fn)
+
+
+if __name__ == '__main__':
+
+    test_runbrick()
+    test_check()
+    test_merge()
+    test_match()
+    test_resources()
+    test_cutout()

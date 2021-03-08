@@ -145,3 +145,12 @@ def test_quantities():
     assert (ebv.size==4) and np.allclose(ebv,ebvref)
     trans_g = get_extinction(ra,dec,band='g',camera='DES')
     assert (ebv.size==4) and np.allclose(trans_g,3.214*ebv)
+
+
+if __name__ == '__main__':
+
+    test_plots()
+    test_monkey_patching()
+    test_misc()
+    test_radec()
+    test_quantities()

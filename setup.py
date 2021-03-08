@@ -10,7 +10,7 @@ setup_keywords['name'] = 'legacysim'
 setup_keywords['description'] = 'Monte Carlo simulation of the legacypipe'
 setup_keywords['author'] = 'DESI Collaboration'
 setup_keywords['author_email'] = ''
-setup_keywords['license'] = 'GPLv2'
+setup_keywords['license'] = 'BSD'
 setup_keywords['url'] = 'https://github.com/adematti/legacysim'
 
 #
