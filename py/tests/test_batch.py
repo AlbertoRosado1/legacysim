@@ -279,7 +279,7 @@ def test_environment_manager_runlist():
                             + ['--outdir',output_dirs[3],'--stage',stage,'--env-header',legacypipe_fn,'--write-log',';']
                 #run_shell([tmppythonpath,'python',runbrick.__file__] + runbrick_args \
                 #            + ['--outdir',output_dirs[3],'--stage',stage,'--env-header',legacypipe_fn])
-            run_shell(command,check=False)
+            run_shell(command,check=True)
         #os.environ.clear()
         #os.environ.update(environ)
         shutil.rmtree(tmp_dir,ignore_errors=False) # remove safely since did not exist

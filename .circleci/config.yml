@@ -10,7 +10,7 @@ jobs:
       - checkout
       - run:
           name: Tests
-          no_output_timeout: 30m
+          no_output_timeout: 50m
           command: |
               cd py
               export PYTHONPATH=${PYTHONPATH}:$(pwd)
