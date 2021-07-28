@@ -9,7 +9,7 @@ First, create your **legacysim** directory and copy/link the **legacy survey** d
   cp /global/cfs/cdirs/cosmo/data/legacysurvey/dr9/ccds-annotated-* ${CSCRATCH}/legacysim/dr9/data/
   cp /global/cfs/cdirs/cosmo/data/legacysurvey/dr9/survey-* ${CSCRATCH}/legacysim/dr9/data/
   ln -s /global/cfs/cdirs/cosmo/data/legacysurvey/dr9/calib/ ${CSCRATCH}/legacysim/dr9/data/
-  ln -s /global/cfs/cdirs/cosmo/work/legacysurvey/dr9m/images/ ${CSCRATCH}/legacysim/dr9/data/
+  ln -s /global/cfs/cdirs/cosmo/work/legacysurvey/dr9/images/ ${CSCRATCH}/legacysim/dr9/data/
 
 Next, clone the :root:`legacysim repo` and pull the docker image (see :ref:`user-building`)::
 
