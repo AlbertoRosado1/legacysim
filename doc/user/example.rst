@@ -6,10 +6,10 @@ Example on NERSC
 First, create your **legacysim** directory and copy/link the **legacy survey** data::
 
   mkdir -p ${CSCRATCH}/legacysim/dr9/data/
-  cp {legacysurveyroot}ccds-annotated-* ${CSCRATCH}/legacysim/dr9/data/
-  cp {legacysurveyroot}survey-* ${CSCRATCH}/legacysim/dr9/data/
-  ln -s {legacysurveyroot}calib/ ${CSCRATCH}/legacysim/dr9/data/
-  ln -s {legacysurveyroot}images/ ${CSCRATCH}/legacysim/dr9/data/
+  cp /global/cfs/cdirs/cosmo/data/legacysurvey/dr9/ccds-annotated-* ${CSCRATCH}/legacysim/dr9/data/
+  cp /global/cfs/cdirs/cosmo/data/legacysurvey/dr9/survey-* ${CSCRATCH}/legacysim/dr9/data/
+  ln -s /global/cfs/cdirs/cosmo/data/legacysurvey/dr9/calib/ ${CSCRATCH}/legacysim/dr9/data/
+  ln -s /global/cfs/cdirs/cosmo/work/legacysurvey/dr9m/images/ ${CSCRATCH}/legacysim/dr9/data/
 
 Next, clone the :root:`legacysim repo` and pull the docker image (see :ref:`user-building`)::
 
@@ -40,11 +40,11 @@ Exit the shifter image and run **legacysim** (see :ref:`user-running`)::
 Check everything ran, match, plot the comparison (see :ref:`user-post-processing`)::
 
   shifter --volume ${HOME}:/homedir/ --image={dockerimage} /bin/bash
-  python /src/legacysim/py/legacysim/scripts/check.py --outdir $CSCRATCH/legacysim/dr9/test --list runlist.txt
-  python /src/legacysim/py/legacysim/scripts/match.py --cat-dir $CSCRATCH/legacysim/dr9/test/merged --outdir $CSCRATCH/legacysim/dr9/test --plot-hist plots/hist.png
+  python /src/legacysim/py/legacysim/scripts/check.py --outdir ${CSCRATCH}/legacysim/dr9/test --list runlist.txt
+  python /src/legacysim/py/legacysim/scripts/match.py --cat-dir ${CSCRATCH}/legacysim/dr9/test/merged --outdir ${CSCRATCH}/legacysim/dr9/test --plot-hist plots/hist.png
 
 You can also merge catalogs, plot cpu and memory usage, image cutouts::
 
-  python /src/legacysim/py/legacysim/scripts/merge.py --filetype tractor --cat-dir $CSCRATCH/legacysim/dr9/test/merged --outdir $CSCRATCH/legacysim/dr9/test
-  python /src/legacysim/py/legacysim/scripts/resources.py --outdir $CSCRATCH/legacysim/dr9/test --plot-fn plots/resources-summary.png
-  python /src/legacysim/py/legacysim/scripts/cutout.py --outdir $CSCRATCH/legacysim/dr9/test --plot-fn "plots/cutout_%(brickname)s-%(icut)d.png" --ncuts 2
+  python /src/legacysim/py/legacysim/scripts/merge.py --filetype tractor --cat-dir ${CSCRATCH}/legacysim/dr9/test/merged --outdir ${CSCRATCH}/legacysim/dr9/test
+  python /src/legacysim/py/legacysim/scripts/resources.py --outdir ${CSCRATCH}/legacysim/dr9/test --plot-fn plots/resources-summary.png
+  python /src/legacysim/py/legacysim/scripts/cutout.py --outdir ${CSCRATCH}/legacysim/dr9/test --plot-fn "plots/cutout_%(brickname)s-%(icut)d.png" --ncuts 2
