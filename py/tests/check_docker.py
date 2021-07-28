@@ -5,6 +5,7 @@ import importlib
 from legacysim.survey import get_git_version
 from legacysim.batch import EnvironmentManager
 
+
 for docker,versions in EnvironmentManager._docker_versions.items():
     module_dir = '/src/docker_%s' % docker
     sys.path.insert(0,module_dir)

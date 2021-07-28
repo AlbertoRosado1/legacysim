@@ -33,7 +33,7 @@ def main(args=None):
     parser.add_argument('--boxsize', type=int, default=None, help='Cutout size in pixels')
     plot_base_template = 'cutout-%(brickname)s-%(iobj)d.png'
     parser.add_argument('--plot-fn', type=str, default=None, help='Plot file name; \
-                        defaults to coadd-dir/%s' % plot_base_template)
+                        defaults to coadd-dir/%s' % plot_base_template.replace('%','%%'))
     RunCatalog.get_output_parser(parser=parser,add_source=True)
     opt = parser.parse_args(args=utils.get_parser_args(args))
     runcat = RunCatalog.from_output_cmdline(opt)

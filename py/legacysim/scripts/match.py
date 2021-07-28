@@ -35,14 +35,14 @@ def main(args=None):
     parser.add_argument('--cat-dir', type=str, default='.', help='Directory for matched catalog')
     cat_matched_base = 'matched_%(base)s.fits'
     parser.add_argument('--cat-fn', type=str, default=None, help='Output file name. \
-                        If not provided, defaults to cat-dir/%s' % cat_matched_base)
+                        If not provided, defaults to cat-dir/%s' % cat_matched_base.replace('%','%%'))
     plot_hist_base_template = 'hist_output_input.png'
     parser.add_argument('--plot-hist', nargs='?', type=str, default=False, const=True,
                         help='Plot histograms of difference (output-input) and residuals. \
                             If no file name provided, defaults to cat-dir + %s' % plot_hist_base_template)
     plot_scatter_base_template = 'scatter_output_input.png'
     parser.add_argument('--plot-scatter', nargs='?', type=str, default=False, const=True,
-                        help='Scatter plot difference (output-input). If no filename provided, defaults to cat-dir/%s' % plot_scatter_base_template)
+                        help='Scatter plot difference (output-input). If no filename provided, defaults to cat-dir/%s' % plot_scatter_base_template.replace('%','%%'))
     parser.add_argument('--plot-fields', type=str, nargs='*', default=['ra','dec','flux_g','flux_r','flux_z'], help='Fields to plot')
     RunCatalog.get_output_parser(parser=parser)
     opt = parser.parse_args(args=utils.get_parser_args(args))

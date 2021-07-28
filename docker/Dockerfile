@@ -4,8 +4,7 @@ WORKDIR /src/
 
 RUN apt -y update && apt install -y apt-utils && echo yes
 
-RUN DEBIAN_FRONTEND=noninteractive \
-  apt install -y --no-install-recommends \
+RUN apt install -y --no-install-recommends \
   openmpi-bin \
   mpich \
   gettext \

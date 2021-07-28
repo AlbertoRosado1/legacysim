@@ -453,7 +453,7 @@ class TractorSimStamp(BaseSimStamp):
         if (obj.shape_r==0.) or (obj.sersic==0):
             src = tractor.PointSource(pos,brightness)
         else:
-            shape = tractor.EllipseESoft(np.log(obj.shape_r),obj.shape_e1,obj.shape_e2)
+            shape = tractor.EllipseE(obj.shape_r,obj.shape_e1,obj.shape_e2)
             src = tractor.sersic.SersicGalaxy(pos=pos,brightness=brightness,
                                        shape=shape,sersicindex=sersicindex)
             #if sersic==1: src = tractor.ExpGalaxy(pos=pos,brightness=brightness,shape=shape)

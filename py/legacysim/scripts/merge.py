@@ -26,7 +26,7 @@ def main(args=None):
     cat_legacypipe_base_template = 'merged_%(filetype)s_legacypipe.fits'
     parser.add_argument('--cat-fn', type=str, default=None,
                         help='Output file name. If not provided, defaults to cat-dir/%s if source is legacypipe, \
-                        else cat-dir/%s.' % (cat_legacypipe_base_template,cat_base_template))
+                        else cat-dir/%s.' % (cat_legacypipe_base_template.replace('%','%%'),cat_base_template.replace('%','%%')))
     RunCatalog.get_output_parser(parser=parser,add_source=True,add_filetype=True)
     opt = parser.parse_args(args=utils.get_parser_args(args))
     RunCatalog.set_default_output_cmdline(opt)
