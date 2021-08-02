@@ -60,16 +60,17 @@ class EnvironmentManager(object):
     _shorts_stage = {'tims':'TIMS','refs':'REFS','outliers':'OUTL','halos':'HALO','srcs':'SRCS','fitblobs':'FITB',
                 'coadds':'COAD','wise_forced':'WISE','writecat':'WCAT'}
 
-    _docker_versions = {}
-    _docker_versions['DR9.6.2'] = {'astrometry':'0.82','tractor':'dr9.4','legacypipe':'DR9.6.2'}
-    _docker_versions['DR9.6.4'] = {'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.4'}
-    _docker_versions['DR9.6.5'] = {'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.5'}
-    _docker_versions['DR9.6.5b'] = {'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.5-4-gbb698724'}
-    _docker_versions['DR9.6.6'] = {'astrometry':'0.83','tractor':'dr9.4','legacypipe':'DR9.6.6'}
-    _docker_versions['DR9.6.7'] = {'astrometry':'0.83','tractor':'dr9.4','legacypipe':'DR9.6.7'}
-    _docker_versions['DR9.6.7b'] = {'astrometry':'0.84','tractor':'dr9.4','legacypipe':'DR9.6.7'}
-    _docker_versions['DR9.6.8'] = {'astrometry':'0.84-15-g48bdcb08','tractor':'dr9.4','legacypipe':'DR9.6.8'}
-    _docker_versions['DR9.6.9'] = {'astrometry':'0.84-15-g48bdcb08','tractor':'dr9.5','legacypipe':'DR9.6.9'}
+    _docker_versions = []
+    _docker_versions.append(('DR9.6.2',{'astrometry':'0.82','tractor':'dr9.4','legacypipe':'DR9.6.2'}))
+    _docker_versions.append(('DR9.6.4',{'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.4'}))
+    _docker_versions.append(('DR9.6.5',{'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.5'}))
+    _docker_versions.append(('DR9.6.5b',{'astrometry':'0.80-14-gf7363e4c','tractor':'dr9.3','legacypipe':'DR9.6.5-4-gbb698724'}))
+    _docker_versions.append(('DR9.6.6',{'astrometry':'0.83','tractor':'dr9.4','legacypipe':'DR9.6.6'}))
+    _docker_versions.append(('DR9.6.7',{'astrometry':'0.83','tractor':'dr9.4','legacypipe':'DR9.6.7'}))
+    _docker_versions.append(('DR9.6.7',{'astrometry':'0.83-1-g4a4c1bfe','tractor':'dr9.4','legacypipe':'DR9.6.7'})) # not satisfactory, but too much of a pain to rebuild with NERSC compilers
+    _docker_versions.append(('DR9.6.7b',{'astrometry':'0.84','tractor':'dr9.4','legacypipe':'DR9.6.7'}))
+    _docker_versions.append(('DR9.6.8',{'astrometry':'0.84-15-g48bdcb08','tractor':'dr9.4','legacypipe':'DR9.6.8'}))
+    _docker_versions.append(('DR9.6.9',{'astrometry':'0.84-15-g48bdcb08','tractor':'dr9.5','legacypipe':'DR9.6.9'}))
 
     def __init__(self, header=None, fn=None, base_dir=None, brickname=None, source='legacypipe', filetype=None, kwargs_simid=None, skip=False):
         """
@@ -209,8 +210,7 @@ class EnvironmentManager(object):
                     if s == stage:
                         break
                 check_all |= len(versions) == 1
-            for docker in sorted(self._docker_versions,reverse=True):
-                versions = self._docker_versions[docker]
+            for docker,versions in self._docker_versions[::-1]:
                 modules = versions.keys() if check_all else ['legacypipe']
                 eq = True
                 for mod in modules:
@@ -219,7 +219,7 @@ class EnvironmentManager(object):
                         break
                 if eq:
                     return docker
-            raise ValueError('Could not find matching %s version for stage %s in header: %s' % (module,stage,self.header))
+            raise ValueError('Could not find matching %s version for stage %s and modules %s in header: %s' % (module,stage,list(modules),self.header))
         key = None
         if module == 'legacypipe':
             key = 'VER_%s' % self._shorts_stage[stage]
@@ -324,6 +324,8 @@ def main(args=None):
                         help='Version for this stage')
     parser.add_argument('--full-pythonpath', action='store_true', default=False,
                         help='Print full PYTHONPATH')
+    parser.add_argument('--check-environ', action='store_true', default=False,
+                        help='Check environment variables are valid (typically if directory or file exists on disk)')
     RunCatalog.get_output_parser(parser=parser,add_source=True)
     utils.get_parser_action_by_dest(parser,'source').default = 'legacypipe'
     opt = parser.parse_args(args=utils.get_parser_args(args))
@@ -332,6 +334,8 @@ def main(args=None):
     environ,versions = [],[]
     for run in runcat:
         environment = EnvironmentManager(base_dir=opt.output_dir,brickname=run.brickname,source=opt.source,kwargs_simid=run.kwargs_simid)
+        if opt.check_environ:
+            environment.check_environ()
         for key,val in environment.environ.items():
             tmp = '%s=%s' % (key,val)
             if tmp not in environ: environ.append(tmp)

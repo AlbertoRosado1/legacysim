@@ -56,6 +56,7 @@ RUN for tag in \
   DR9.6.5b \
   DR9.6.6 \
   DR9.6.7 \
+  DR9.6.7a \
   DR9.6.7b \
   DR9.6.8 \
   DR9.6.9 \
@@ -87,6 +88,22 @@ COPY --from=legacysurvey/legacypipe:DR9.6.8 /src/legacypipe/.git docker_DR9.6.8/
 
 COPY --from=legacysurvey/legacypipe:DR9.6.9 /usr/local/lib/python /src/legacypipe/py docker_DR9.6.9/
 COPY --from=legacysurvey/legacypipe:DR9.6.9 /src/legacypipe/.git docker_DR9.6.9/legacypipe/.git
+
+# checkout DR9.6.7a astrometry version, e.g. brickname 2446p450
+# RUN cp -r docker_DR9.6.7b docker_DR9.6.7a \
+#    && cd docker_DR9.6.7a \
+#    && rm -rf astrometry \
+#    && git clone http://github.com/dstndstn/astrometry.net.git astrometry \
+#    && cd astrometry \
+#    && git checkout tags/0.83-1-g4a4c1bfe \
+#    && make -j4 && make \
+#    && make py \
+#    && make extra \
+#    && make install INSTALL_DIR=/src/docker_DR9.6.7a \
+#    && make clean \
+#    && cp -r lib/python/astrometry . \
+#    && (cd && PYTHONPATH=/src/docker_DR9.6.7a python3 -c "import astrometry; print(astrometry.__version__)") \
+#    && git describe
 
 # legacypipe versions
 RUN rm -rf legacypipe/py/obiwan \

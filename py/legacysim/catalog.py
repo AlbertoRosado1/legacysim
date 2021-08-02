@@ -105,7 +105,7 @@ class BaseCatalog(fits.tabledata):
         """Return array of size :attr:`size` filled with :attr:`numpy.nan`."""
         return self.ones()*np.nan
 
-    def full(self,*args,**kwargs):
+    def full(self, *args, **kwargs):
         """Call :func:`numpy.full` with shape :attr:`size`."""
         return np.full(self.size,*args,**kwargs)
 
