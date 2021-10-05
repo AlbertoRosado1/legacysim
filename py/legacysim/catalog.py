@@ -93,6 +93,10 @@ class BaseCatalog(fits.tabledata):
         """Return array of size :attr:`size` filled with one."""
         return np.ones(len(self),dtype=dtype)
 
+    def full(self, fill_value, dtype=np.float64):
+        """Return array of size :attr:`size` filled with ``fill_value``."""
+        return np.full(len(self),fill_value,dtype=dtype)
+
     def falses(self):
         """Return array of size :attr:`size` filled with ``False``."""
         return self.zeros(dtype=np.bool_)
@@ -104,10 +108,6 @@ class BaseCatalog(fits.tabledata):
     def nans(self):
         """Return array of size :attr:`size` filled with :attr:`numpy.nan`."""
         return self.ones()*np.nan
-
-    def full(self, *args, **kwargs):
-        """Call :func:`numpy.full` with shape :attr:`size`."""
-        return np.full(self.size,*args,**kwargs)
 
     def index(self):
         """Return zero-starting index."""

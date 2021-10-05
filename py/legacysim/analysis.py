@@ -113,7 +113,7 @@ class BaseImage(object):
 
         Parameters
         ----------
-        ax : plt.axes
+        ax : plt.axes.Axes
             Where to plot image.
             One can also provide figure file name ``fn``.
             See ``utils.saveplot``.
@@ -352,7 +352,7 @@ class ImageAnalysis(BaseImage):
 
         Parameters
         ----------
-        ax : plt.axes
+        ax : plt.axes.Axes
             Where to plot sources.
 
         radius_in_pixel : float, default=3./0.262
@@ -884,7 +884,7 @@ class CatalogMatching(CatalogMerging):
 
         Parameters
         ----------
-        ax : plt.axes
+        ax : plt.axes.Axes
             Where to plot.
 
         field : string
@@ -997,7 +997,7 @@ class CatalogMatching(CatalogMerging):
 
         Parameters
         ----------
-        ax : plt.axes
+        ax : plt.axes.Axes
             Where to plot.
 
         field : string
@@ -1159,7 +1159,7 @@ class ResourceEventAnalysis(CatalogMerging):
 
         Parameters
         ----------
-        ax : plt.axes
+        ax : plt.axes.Axes
             Where to plot image.
             One can also provide figure file name ``fn``.
             See :func:`legacysim.utils.saveplot`.
@@ -1313,7 +1313,7 @@ class ResourceAnalysis(ResourceEventAnalysis):
 
         Parameters
         ----------
-        ax : plt.axes
+        ax : plt.axes.Axes
             Where to plot events.
 
         events : array-like, string, default=None
@@ -1336,7 +1336,7 @@ class ResourceAnalysis(ResourceEventAnalysis):
 
         Parameters
         ----------
-        ax : plt.axes
+        ax : plt.axes.Axes
             Where to plot the time series.
             One can also provide figure file name ``fn``.
             See :func:`legacysim.utils.saveplot`.
@@ -1396,7 +1396,7 @@ class ResourceAnalysis(ResourceEventAnalysis):
 
         Parameters
         ----------
-        ax : plt.axes
+        ax : plt.axes.Axes
             Where to plot the time series.
             One can also provide figure file name ``fn``.
             See :func:`legacysim.utils.saveplot`.

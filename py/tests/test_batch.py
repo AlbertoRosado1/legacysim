@@ -301,7 +301,7 @@ def test_docker_versions():
     header_legacypipe = fitsio.read_header(find_file(base_dir='out-testcase3-legacypipe-run1',filetype='tractor',source='legacypipe',brickname='2447p120'))
     em = EnvironmentManager(header=header_legacypipe)
 
-    for docker,versions in EnvironmentManager._docker_versions.items():
+    for docker,versions in EnvironmentManager._docker_versions:
         split_stages = 3
         legacypipe_versions = {stage:versions['legacypipe'] for stage in Stages.all()[:split_stages]}
         legacypipe_versions.update({stage:'DR9.6.7' for stage in Stages.all()[split_stages:]})
