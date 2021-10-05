@@ -93,9 +93,9 @@ class BaseCatalog(fits.tabledata):
         """Return array of size :attr:`size` filled with one."""
         return np.ones(len(self),dtype=dtype)
 
-    def full(self, fill_value, dtype=np.float64):
+    def full(self, fill_value, **kwargs):
         """Return array of size :attr:`size` filled with ``fill_value``."""
-        return np.full(len(self),fill_value,dtype=dtype)
+        return np.full(len(self),fill_value,**kwargs)
 
     def falses(self):
         """Return array of size :attr:`size` filled with ``False``."""
