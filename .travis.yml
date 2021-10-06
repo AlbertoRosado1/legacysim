@@ -31,12 +31,13 @@ install:
     - pip install cython
     - (cd $HOME && wget -nv http://www.fftw.org/fftw-3.3.8.tar.gz && tar xvzf fftw-3.3.8.tar.gz && cd fftw-3.3.8 && ./configure --enable-shared && make -j4 && sudo make install)
     - pip install galsim
-    - (cd $HOME && git clone https://github.com/dstndstn/tractor.git && cd tractor && python setup-cython.py install --with-ceres)
-    - if [ ! -d "$HOME/astrometry.net" ]; then (cd $HOME; git clone https://github.com/dstndstn/astrometry.net.git); fi
-    - (cd $HOME/astrometry.net && git pull) || (rm -Rf $HOME/astrometry.net && cd $HOME && git clone https://github.com/dstndstn/astrometry.net.git);
-    - (cd $HOME/astrometry.net && make && make py)
+    - (cd $HOME && git clone https://github.com/dstndstn/tractor.git && cd tractor && git checkout dr9.5 && python setup-cython.py install --with-ceres)
+    #- if [ ! -d "$HOME/astrometry.net" ]; then (cd $HOME; git clone https://github.com/dstndstn/astrometry.net.git); fi
+    #- (cd $HOME/astrometry.net && git pull) || (rm -Rf $HOME/astrometry.net && cd $HOME && git clone https://github.com/dstndstn/astrometry.net.git);
+    - (rm -Rf $HOME/astrometry.net && cd $HOME && git clone https://github.com/dstndstn/astrometry.net.git);
+    - (cd $HOME/astrometry.net && git checkout 0.84-15-g48bdcb08 && make && make py)
     - (cd $HOME && git clone https://github.com/legacysurvey/unwise_psf.git && cd unwise_psf && git checkout dr9.3)
-    - (cd $HOME && git clone https://github.com/legacysurvey/legacypipe.git legacypipe && rm -rf legacypipe/py/obiwan)
+    - (cd $HOME && git clone https://github.com/legacysurvey/legacypipe.git legacypipe && cd legacypipe && git checkout tags/DR9.6.9 && rm -rf py/obiwan)
     - (cd $HOME && cp -r legacypipe legacypipe_DR9.6.2 && cd legacypipe_DR9.6.2 && git checkout tags/DR9.6.2)
     - (cd $HOME && cp -r legacypipe legacypipe_DR9.6.5 && cd legacypipe_DR9.6.5 && git checkout tags/DR9.6.5)
     - (cd $HOME && cp -r legacypipe legacypipe_DR9.6.7 && cd legacypipe_DR9.6.7 && git checkout tags/DR9.6.7)
