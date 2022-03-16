@@ -187,20 +187,14 @@ class DecamSimImage(BaseSimImage,DecamImage):
             Gain (ADU x gain -> electrons).
         """
         #print(self.width,self.height,self.survey.add_sim_noise,tim.x0,tim.y0,tim.hdr['GAINA'],tim.hdr['GAINB'])
-        isscalarx,isscalary = np.isscalar(x),np.isscalar(y)
-
-        def return_gain(g):
-            if isscalarx: g = g[...,0]
-            return g
-
-        sipx = np.atleast_1d(tim.x0+x)
-        assert sipx.ndim == 1
-        gain = np.full(len(sipx) if isscalary else (len(y),len(sipx)),tim.hdr['GAINA'])
+        sipx = tim.x0 + np.asarray(x)
+        y = np.asarray(y)
+        gain = np.full(y.shape + sipx.shape, tim.hdr['GAINA'])
         halfw = self.width//2
         if halfw != 1023:
             logger.warning('Found halfw = %d for %s (expected 1023), defaults to average(GAINA,GAINB).',halfw,self.camera)
-            gain[...] = np.average([tim.hdr['GAINA'],tim.hdr['GAINB']])
-            return return_gain(gain)
+            gain[...] = np.average([tim.hdr['GAINA'], tim.hdr['GAINB']])
+            return gain
         if self.ccdname.startswith('N'):
             maskb = sipx > halfw
         elif self.ccdname.startswith('S'):
@@ -208,7 +202,7 @@ class DecamSimImage(BaseSimImage,DecamImage):
         else:
             raise ValueError('ccdname is expected to end with N or S')
         gain[...,maskb] = tim.hdr['GAINB']
-        return return_gain(gain)
+        return gain
 
     def get_nano2e(self, *args, **kwargs):
         """Return nanomaggies to electron counts conversion."""
@@ -317,15 +311,12 @@ class MegaPrimeSimImage(BaseSimImage,MegaPrimeImage):
             Gain (ADU x gain -> electrons).
         """
         #print(self.width,self.height,self.survey.add_sim_noise,tim.x0,tim.y0,tim.hdr['GAINA'],tim.hdr['GAINB'])
-        isscalarx,isscalary = np.isscalar(x),np.isscalar(y)
-        sipx = np.atleast_1d(tim.x0+x)
-        assert sipx.ndim == 1
-        gain = np.full(len(sipx) if isscalary else (len(y),len(sipx)),tim.hdr['GAINA'])
+        sipx = tim.x0 + np.asarray(x)
+        y = np.asarray(y)
+        gain = np.full(y.shape + sipx.shape, tim.hdr['GAINA'])
         limb = [int(s) for s in re.findall(r'\w+',tim.hdr['CSECB'])]
         maskb = (sipx >= limb[0]) & (sipx <= limb[1])
-        gain[...,maskb] = tim.hdr['GAINB']
-        if isscalarx:
-            gain = gain[...,0]
+        gain[..., maskb] = tim.hdr['GAINB']
         return gain
 
     def get_nano2e(self, *args, **kwargs):

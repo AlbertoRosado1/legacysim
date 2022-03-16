@@ -145,22 +145,22 @@ def test_brick():
     brick = bricks.get_by_name(['2599p187'])
     assert len(brick.get('brickid')) == 1
     brick = bricks.get_by_name('2599p187')
-    assert np.isscalar(brick.get('brickid'))
+    assert np.ndim(brick.get('brickid')) == 0
     brick = bricks.get_by_radec([259.91]*2,[18.71]*2)
     assert len(brick) == 2 and np.all(brick.brickname == '2599p187')
     brick2 = bricks[bricks.ra1>240].get_by_radec([259.91]*2,[18.71]*2)
     assert len(brick2) == 2 and np.all(brick2.brickname == '2599p187')
     radecbox = brick.get_radecbox(total=False)
     radecbox = brick.get_radecbox(total=True)
-    assert np.all([np.isscalar(x) for x in radecbox])
+    assert np.all(np.ndim(x) == 0 for x in radecbox)
     radecbox = bricks.get_radecbox(total=True)
     assert np.allclose(radecbox,(0.,360.,-90.,90.))
     area = brick.get_area(total=True)
-    assert np.isscalar(area)
+    assert np.ndim(area) == 0
     area = bricks.get_area(total=True)
     assert np.allclose(area,4.*np.pi*(180./np.pi)**2)
     x,y = bricks.get_xy_from_radec(259.91,18.71)
-    assert np.isscalar(x) and np.isscalar(y)
+    assert np.ndim(x) == np.ndim(y) == 0
     x,y = bricks.get_xy_from_radec([259.91]*2,[18.71]*2,brickname=['2599p187']*2)
     assert (x>=0).all() and (x<=3600).all() and (y>=0).all() and (y<=3600).all()
     x2,y2 = brick.get_xy_from_radec([259.91]*2,[18.71]*2)

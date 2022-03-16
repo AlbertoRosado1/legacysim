@@ -50,7 +50,7 @@ class BaseCatalog(fits.tabledata):
     def __getitem__(self, item):
         """Redefine :meth:`astrometry.util.fits.tabledata.__getitem__` to avoid calling :meth:`__init__`."""
         toret = self.copy(fields=[])
-        for name,val in self.__dict__.items():
+        for name, val in self.__dict__.items():
             if name.startswith('_'):
                 continue
             if name in self and len(self) < 2:
@@ -164,9 +164,6 @@ class BaseCatalog(fits.tabledata):
 
         other_size = other.get(fields_other[0])[index_other].size
 
-        def isfloating(dtype):
-            return isinstance(np.zeros(1,dtype=dtype)[0],np.floating)
-
         if isinstance(index_self,str):
             index_self_ = index_self
             totalsize = self.size + other_size
@@ -179,7 +176,7 @@ class BaseCatalog(fits.tabledata):
             for field in self.fields:
                 col_self = self.get(field)
                 col_new = np.zeros(shape=(other_size,)+col_self.shape[1:],dtype=col_self.dtype)
-                if fill_nan and isfloating(col_self.dtype):
+                if fill_nan and np.issubdtype(col_self.dtype, np.floating):
                     col_new[...] = np.nan
                 if index_self_  == 'before':
                     col_new = np.concatenate([col_new,col_self])
@@ -196,7 +193,7 @@ class BaseCatalog(fits.tabledata):
                     self.delete_column(field)
             if field not in self.fields:
                 col_self = np.zeros(shape=(self.size,)+col_other.shape[1:],dtype=col_other.dtype)
-                if fill_nan and isfloating(col_self.dtype):
+                if fill_nan and np.issubdtype(col_self.dtype, np.floating):
                     col_self[...] = np.nan
             col_self[index_self] = col_other[index_other]
 
@@ -679,7 +676,7 @@ class BrickCatalog(BaseCatalog):
         bricks : BrickCatalog
             ``self`` cut to ``brickname``.
         """
-        if np.isscalar(brickname):
+        if np.ndim(brickname) == 0:
             index = np.flatnonzero(self.brickname == brickname)[0]
         else:
             uniques,inverse = np.unique(brickname,return_inverse=True)
@@ -703,8 +700,7 @@ class BrickCatalog(BaseCatalog):
         bricks : BrickCatalog
             ``self`` cut to bricks containing ``ra``, ``dec``.
         """
-        if not np.isscalar(ra):
-            ra, dec = np.array(ra), np.array(dec)
+        ra, dec = np.asarray(ra), np.asarray(dec)
         row = np.int32(np.floor(dec * self._rowmax / 180. + 360. + 0.5))
         row = np.clip(row, 0, self._rowmax)
         ncols = self._ncols[row]
@@ -776,21 +772,16 @@ class BrickCatalog(BaseCatalog):
         by : float, ndarray
             Brick y coordinate.
         """
-        if np.isscalar(brickname):
-            bx, by = wcs_for_brick(self.get_by_name(brickname)).radec2pixelxy(ra,dec)[1:]
-            return bx-1, by-1 # legacyipe convention: zero-indexed
         if brickname is None:
-            brickname = np.atleast_1d(self.get_by_radec(ra,dec).brickname)
-        isscalar = np.isscalar(ra)
-        ra,dec = np.atleast_1d(ra),np.atleast_1d(dec)
+            brickname = np.asarray(self.get_by_radec(ra,dec).brickname)
+        ra, dec = np.array(ra), np.array(dec)
         brickname = np.asarray(brickname)
-        bx,by = np.zeros_like(ra),np.zeros_like(dec)
-        for brickname_ in np.unique(brickname):
-            mask = brickname == brickname_
-            bx[mask],by[mask] = self.get_xy_from_radec(ra[mask],dec[mask],brickname_)
-        if isscalar:
-            return bx[0],by[0]
-        return bx,by
+        bx, by = np.zeros_like(ra), np.zeros_like(dec)
+        for brick in np.unique(brickname):
+            mask = brickname == brick
+            bbx, bby = wcs_for_brick(self.get_by_name(brick)).radec2pixelxy(ra[mask], dec[mask])[1:]
+            bx[mask], by[mask] = bbx - 1, bby - 1 # legacyipe convention: zero-indexed
+        return bx, by
 
     def write_list(self, fn):
         """
@@ -825,7 +816,7 @@ class BrickCatalog(BaseCatalog):
             List of (unique) brick names.
         """
         bricknames = []
-        if np.isscalar(bricklist): bricklist = [bricklist]
+        if np.ndim(bricklist) == 0: bricklist = [bricklist]
         for brickname in bricklist:
             if os.path.isfile(brickname):
                 logger.info('Reading brick list %s',brickname)
@@ -1521,7 +1512,7 @@ class RunCatalog(BaseCatalog):
         """
         if bricknames is None: bricknames = []
         if kwargs_simids is None: kwargs_simids = {}
-        if np.isscalar(bricknames): bricknames = [bricknames]
+        if np.ndim(bricknames) == 0: bricknames = [bricknames]
         if isinstance(kwargs_simids,dict): kwargs_simids = [kwargs_simids]
         self = cls()
         stagesid = self.append_stages(stages)
@@ -1732,7 +1723,7 @@ class RunCatalog(BaseCatalog):
         Column ``stagesid`` can be modified, in particular if more than one run lists are provided.
         """
         self = 0
-        if np.isscalar(fns):
+        if np.ndim(fns) == 0:
             fns = [fns]
         for fn in fns:
             tmp = RunCatalog()

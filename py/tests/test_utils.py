@@ -109,7 +109,7 @@ def test_misc():
 def test_radec():
     ramin,ramax,decmin,decmax = 259.9,260.2,18.7,18.8
     ra, dec = sample_ra_dec(size=None,radecbox=[ramin,ramax,decmin,decmax],seed=20)
-    assert np.isscalar(ra) and np.isscalar(dec)
+    assert np.ndim(ra) == np.ndim(dec) == 0
     ra, dec = sample_ra_dec(size=20,radecbox=[ramin,ramax,decmin,decmax],seed=20)
     assert len(ra) == 20 and len(dec) == 20
     assert np.all((ra>=ramin) & (ra<=ramax) & (dec>=decmin) & (dec<=decmax))
@@ -123,10 +123,12 @@ def test_radec():
     mask = mask_collisions(ra,dec,radius_in_degree=0.5)
     assert mask[1:10].all() and not mask[10:].any()
     area = get_radecbox_area(ramin,ramax,decmin,decmax)
-    assert np.isscalar(area)
-    decfrac = np.diff(np.rad2deg(np.sin(np.deg2rad([decmin,decmax]))),axis=0)
-    rafrac = np.diff([ramin,ramax],axis=0)
-    assert np.allclose(area,decfrac*rafrac)
+    assert np.ndim(area) == 0
+    decfrac = np.diff(np.rad2deg(np.sin(np.deg2rad([decmin, decmax]))),axis=0)
+    rafrac = np.diff([ramin, ramax],axis=0)
+    assert np.allclose(area, decfrac*rafrac)
+    ramin, ramax, decmin, decmax = [np.ones(4, dtype='f8')]*4
+    assert get_radecbox_area(ramin,ramax,decmin,decmax).shape == (4, )
 
 
 def test_quantities():
@@ -136,11 +138,11 @@ def test_quantities():
     assert np.allclose(ba,ba_) and np.allclose(phi,phi_)
     mag = 24.
     nano = mag2nano(mag)
-    mag_ = nano2mag(nano)
-    assert np.allclose(mag,mag_)
+    mag2 = nano2mag(nano)
+    assert np.allclose(mag, mag2)
     ra,dec = 12,4
     ebvref = get_extinction(ra,dec)
-    assert np.isscalar(ebvref) and np.allclose(ebvref,0.01896500348082133)
+    assert np.ndim(ebvref) == 0 and np.allclose(ebvref, 0.01896500348082133)
     ebv = get_extinction([ra]*4,[dec]*4)
     assert (ebv.size==4) and np.allclose(ebv,ebvref)
     trans_g = get_extinction(ra,dec,band='g',camera='DES')

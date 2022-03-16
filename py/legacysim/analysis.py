@@ -196,8 +196,8 @@ class ImageAnalysis(BaseImage):
             Else, only the image in the corresponding band is read.
         """
         fmt = 'jpeg' if 'jpeg' in filetype else 'fits'
-        band = band or ['g','r','z']
-        if fmt == 'fits' and not np.isscalar(band):
+        band = band or ['g', 'r', 'z']
+        if fmt == 'fits' and np.ndim(band):
             assert len(band) == 3
             img = []
             for b in band:

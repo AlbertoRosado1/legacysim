@@ -412,11 +412,9 @@ def get_radecbox_area(ramin, ramax, decmin, decmax):
     area : float, ndarray.
         Area (degree^2).
     """
-    decfrac = np.diff(np.rad2deg(np.sin(np.deg2rad([decmin,decmax]))),axis=0)
-    rafrac = np.diff([ramin,ramax],axis=0)
-    area = decfrac*rafrac
-    if np.isscalar(ramin):
-        return area[0]
+    decfrac = np.diff(np.rad2deg(np.sin(np.deg2rad([decmin, decmax]))), axis=0)
+    rafrac = np.diff([ramin, ramax], axis=0)
+    area = (decfrac*rafrac)[0]
     return area
 
 
@@ -551,11 +549,9 @@ def get_extinction(ra, dec, band=None, camera='DES'):
         c = 1
     else:
         c = sfd.extinctions['%s %s' % (camera,band)]
-    isscalar = np.isscalar(ra)
-    ra,dec = np.asarray(ra),np.asarray(dec)
+    ra, dec = np.asarray(ra), np.asarray(dec)
     toret = c*sfd.ebv(ra, dec)
-    if isscalar:
-        return toret[0]
+    toret.shape = ra.shape
     return toret
 
 
